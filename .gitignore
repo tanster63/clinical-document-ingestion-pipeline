@@ -1,0 +1,28 @@
+# Environment / secrets
+.env
+.env.*
+!.env.example
+*-key.json
+service-account*.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Build / local artifacts
+build/
+dist/
+.coverage
+htmlcov/
+
+# Rendered corpus output is committed deliberately (deliverable 6.1),
+# but intermediate render scratch is not.
+corpus/.render_tmp/
+
+# macOS
+.DS_Store
