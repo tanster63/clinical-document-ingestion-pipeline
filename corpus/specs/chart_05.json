@@ -1,0 +1,165 @@
+{
+  "chart_id": "chart_05",
+  "file_name": "EMA_20250422T110000_0000_MRN9184255_PMS6673012_PID20194820_PatientChart_400515.pdf",
+  "location_name": "Cumberland Brentwood",
+  "location_address": "4410 Maryland Farms, Brentwood TN 37027",
+  "patient": {
+    "mrn": "9184255",
+    "pms_id": "6673012",
+    "family_name": "ABERNATHY",
+    "given_name": "ROSALIND",
+    "preferred_name": "Roz Abernathy",
+    "date_of_birth": "1951-12-05",
+    "sex": "Female",
+    "phone_home": "(615) 555-0117"
+  },
+  "encounters": [
+    {
+      "encounter_date": "2025-04-22",
+      "provider_name": "Yusuf Halloran",
+      "provider_role": "DO",
+      "is_primary_provider": true,
+      "chief_complaint": "Right hip pain and stiffness, worsening over 1 year.",
+      "hpi_text": "Patient reports gradually worsening right groin and lateral hip pain over the past year, now limiting her ability to walk more than two blocks and causing difficulty rising from a seated position. Pain is worse with weight bearing and improves with rest. No fall or injury. Has been using a cane intermittently.",
+      "exam_text": "Right hip: antalgic gait, decreased and painful internal rotation, positive FABER test. No groin swelling or warmth. Pulses intact distally, no lower extremity edema.",
+      "note_text": "Radiographs confirm advanced right hip osteoarthritis. Discussed conservative management including activity modification and weight bearing as tolerated, and started scheduled acetaminophen. Reviewed eventual total hip arthroplasty as a future option if conservative measures fail. Continue alendronate for osteoporosis.",
+      "follow_up_raw": "Follow up in 5 weeks",
+      "signed_by": "Yusuf Halloran, DO",
+      "signed_at": "2025-04-22T11:00:00",
+      "body_region": "hip",
+      "laterality": "right",
+      "visit_type": "new",
+      "vitals": {
+        "taken_by": "K. Ruiz, MA",
+        "taken_date": "2025-04-22",
+        "bp_systolic": 142,
+        "bp_diastolic": 84,
+        "pulse": 80,
+        "respirations": 18,
+        "o2_sat": 96,
+        "temperature_f": 98.0,
+        "height_in": 63.0,
+        "weight_lbs": 168.4,
+        "bmi": 29.8,
+        "bsa": 1.82,
+        "is_patient_reported": false
+      },
+      "current_medications": [
+        {
+          "medication_name": "alendronate",
+          "route": "Oral"
+        },
+        {
+          "medication_name": "calcium carbonate",
+          "route": "Oral"
+        },
+        {
+          "medication_name": "vitamin d3",
+          "route": "Oral"
+        }
+      ],
+      "diagnoses": [
+        {
+          "icd10_code": "M16.11",
+          "icd10_description": "Unilateral primary osteoarthritis, right hip",
+          "diagnosis_text": "Severe right hip osteoarthritis",
+          "is_primary": true,
+          "source": "impression"
+        }
+      ],
+      "prescriptions": [
+        {
+          "drug_name": "acetaminophen",
+          "strength": "650",
+          "strength_unit": "mg",
+          "dose_form": "tablet",
+          "route": "PO",
+          "sig_text": "Take 1 po tid",
+          "quantity": 90,
+          "quantity_unit": "Tablet",
+          "refills": 2,
+          "action": "new"
+        }
+      ],
+      "imaging": [
+        {
+          "modality": "XR",
+          "body_part": "pelvis and right hip",
+          "laterality": "right",
+          "performed_date": "2025-04-22",
+          "interpretation_text": "Two views of the pelvis and right hip. Severe joint space narrowing of the right hip with subchondral sclerosis, osteophyte formation, and superior migration of the femoral head. Left hip shows mild degenerative change.",
+          "impression": "Severe right hip osteoarthritis."
+        }
+      ]
+    },
+    {
+      "encounter_date": "2025-05-27",
+      "provider_name": "Marla Whitcomb",
+      "provider_role": "NP",
+      "is_primary_provider": false,
+      "chief_complaint": "Follow-up right hip osteoarthritis, persistent pain despite acetaminophen.",
+      "hpi_text": "Patient returns reporting continued right hip pain despite scheduled acetaminophen, now rating pain 6/10 and affecting sleep. She has not tolerated increasing activity as hoped. No new falls or trauma.",
+      "exam_text": "Right hip: continued antalgic gait, painful internal rotation, FABER positive. No acute distress.",
+      "note_text": "Given inadequate relief with acetaminophen, transitioning to scheduled celecoxib with renal function monitoring given her age. Reinforced hip precautions and continued weight-bearing exercise as tolerated. Will refer for orthopedic surgical consultation if no improvement by next visit.",
+      "follow_up_raw": "Follow up in 3 months",
+      "signed_by": "Marla Whitcomb, NP",
+      "signed_at": "2025-05-27T10:30:00",
+      "body_region": "hip",
+      "laterality": "right",
+      "visit_type": "follow_up",
+      "vitals": {
+        "taken_by": null,
+        "taken_date": "2025-05-27",
+        "bp_systolic": null,
+        "bp_diastolic": null,
+        "pulse": null,
+        "respirations": null,
+        "o2_sat": null,
+        "temperature_f": null,
+        "height_in": 63.0,
+        "weight_lbs": 170.0,
+        "bmi": 30.1,
+        "bsa": 1.83,
+        "is_patient_reported": true
+      },
+      "current_medications": [
+        {
+          "medication_name": "alendronate",
+          "route": "Oral"
+        },
+        {
+          "medication_name": "calcium carbonate",
+          "route": "Oral"
+        },
+        {
+          "medication_name": "vitamin d3",
+          "route": "Oral"
+        }
+      ],
+      "diagnoses": [
+        {
+          "icd10_code": "M16.11",
+          "icd10_description": "Unilateral primary osteoarthritis, right hip",
+          "diagnosis_text": "Severe right hip osteoarthritis",
+          "is_primary": true,
+          "source": "impression"
+        }
+      ],
+      "prescriptions": [
+        {
+          "drug_name": "celecoxib",
+          "strength": "200",
+          "strength_unit": "mg",
+          "dose_form": "capsule",
+          "route": "PO",
+          "sig_text": "Take 1 po qd",
+          "quantity": 30,
+          "quantity_unit": "Capsule",
+          "refills": 1,
+          "action": "new"
+        }
+      ],
+      "imaging": []
+    }
+  ]
+}

@@ -1,0 +1,265 @@
+{
+  "chart_id": "chart_02",
+  "file_name": "EMA_20250514T093000_0000_MRN6027418_PMS9114063_PID20194522_PatientChart_400212.pdf",
+  "location_name": "Cumberland Brentwood",
+  "location_address": "4410 Maryland Farms, Brentwood TN 37027",
+  "patient": {
+    "mrn": "6027418",
+    "pms_id": "9114063",
+    "family_name": "OKONKWO",
+    "given_name": "ADEBAYO",
+    "preferred_name": "Ade Okonkwo",
+    "date_of_birth": "1974-11-23",
+    "sex": "Male",
+    "phone_home": "(615) 555-0192"
+  },
+  "encounters": [
+    {
+      "encounter_date": "2025-05-14",
+      "provider_name": "Dorian Vance",
+      "provider_role": "MD",
+      "is_primary_provider": true,
+      "chief_complaint": "Low back pain radiating into the left leg, 6 weeks.",
+      "hpi_text": "Patient reports gradual onset low back pain six weeks ago after lifting a heavy box at work, now radiating down the posterior left thigh into the calf. Pain worsens with prolonged sitting and forward flexion, improves lying supine. Denies bowel or bladder dysfunction, saddle anesthesia, or bilateral leg weakness. Has tried ibuprofen with minimal relief.",
+      "exam_text": "Lumbar spine: no midline tenderness, mild left paraspinal spasm, forward flexion limited to 60 percent by pain. Positive straight leg raise on the left at 40 degrees reproducing radicular pain. Left ankle dorsiflexion strength 4/5, sensation diminished over the left lateral calf. Deep tendon reflexes symmetric.",
+      "note_text": "Findings consistent with left L5-S1 radiculopathy. Ordered lumbar spine x-rays today and will proceed to MRI given persistent radicular findings. Started methocarbamol for muscle spasm and discussed activity modification. Will reassess after imaging is complete.",
+      "follow_up_raw": "Follow up in 6 weeks",
+      "signed_by": "Dorian Vance, MD",
+      "signed_at": "2025-05-14T10:15:00",
+      "body_region": "lumbar spine",
+      "laterality": "none",
+      "visit_type": "new",
+      "vitals": {
+        "taken_by": "T. Nguyen, MA",
+        "taken_date": "2025-05-14",
+        "bp_systolic": 138,
+        "bp_diastolic": 88,
+        "pulse": 78,
+        "respirations": 16,
+        "o2_sat": 97,
+        "temperature_f": 98.4,
+        "height_in": 70.0,
+        "weight_lbs": 214.6,
+        "bmi": 30.8,
+        "bsa": 2.15,
+        "is_patient_reported": false
+      },
+      "current_medications": [
+        {
+          "medication_name": "omeprazole",
+          "route": "Oral"
+        },
+        {
+          "medication_name": "metformin",
+          "route": "Oral"
+        }
+      ],
+      "diagnoses": [
+        {
+          "icd10_code": "M51.16",
+          "icd10_description": "Intervertebral disc disorders with radiculopathy, lumbar region",
+          "diagnosis_text": "Lumbar disc herniation with left-sided radiculopathy",
+          "is_primary": true,
+          "source": "impression"
+        },
+        {
+          "icd10_code": "M54.16",
+          "icd10_description": "Radiculopathy, lumbar region",
+          "diagnosis_text": "Lumbar radiculopathy",
+          "is_primary": false,
+          "source": "impression"
+        }
+      ],
+      "prescriptions": [
+        {
+          "drug_name": "methocarbamol",
+          "strength": "750",
+          "strength_unit": "mg",
+          "dose_form": "tablet",
+          "route": "PO",
+          "sig_text": "Take 1 po tid x 10 days",
+          "quantity": 30,
+          "quantity_unit": "Tablet",
+          "refills": 0,
+          "action": "new"
+        }
+      ],
+      "imaging": [
+        {
+          "modality": "XR",
+          "body_part": "lumbar spine",
+          "laterality": null,
+          "performed_date": "2025-05-14",
+          "interpretation_text": "Two views of the lumbar spine. Mild multilevel degenerative disc space narrowing. No fracture, spondylolisthesis, or acute osseous abnormality.",
+          "impression": "Mild lumbar spondylosis; no acute osseous findings."
+        }
+      ]
+    },
+    {
+      "encounter_date": "2025-06-25",
+      "provider_name": "Dorian Vance",
+      "provider_role": "MD",
+      "is_primary_provider": true,
+      "chief_complaint": "Follow-up low back pain with left leg radiculopathy, status post imaging.",
+      "hpi_text": "Patient returns after lumbar MRI obtained 5/20/2025 confirming a left paracentral disc herniation at L5-S1. Radicular pain into the left leg persists despite methocarbamol and activity modification, now rated 7/10 and affecting sleep. Denies new weakness, bowel or bladder changes.",
+      "exam_text": "Lumbar spine: persistent left paraspinal tenderness, forward flexion improved to 80 percent. Straight leg raise positive on the left at 45 degrees. Left ankle dorsiflexion strength remains 4/5.",
+      "note_text": "MRI confirms left L5-S1 disc herniation correlating with exam. Given persistent radiculopathy despite six weeks of conservative care, discussed surgical options. Patient elects to proceed with left L5-S1 microdiscectomy. Starting gabapentin for neuropathic pain while surgery is scheduled.",
+      "follow_up_raw": "Follow up in 3 weeks",
+      "signed_by": "Dorian Vance, MD",
+      "signed_at": "2025-06-25T09:00:00",
+      "body_region": "lumbar spine",
+      "laterality": "none",
+      "visit_type": "follow_up",
+      "vitals": {
+        "taken_by": "T. Nguyen, MA",
+        "taken_date": "2025-06-25",
+        "bp_systolic": 134,
+        "bp_diastolic": 86,
+        "pulse": 74,
+        "respirations": 16,
+        "o2_sat": 98,
+        "temperature_f": 98.1,
+        "height_in": 70.0,
+        "weight_lbs": 212.0,
+        "bmi": 30.4,
+        "bsa": 2.13,
+        "is_patient_reported": false
+      },
+      "current_medications": [
+        {
+          "medication_name": "omeprazole",
+          "route": "Oral"
+        },
+        {
+          "medication_name": "metformin",
+          "route": "Oral"
+        },
+        {
+          "medication_name": "methocarbamol",
+          "route": "Oral"
+        }
+      ],
+      "diagnoses": [
+        {
+          "icd10_code": "M51.16",
+          "icd10_description": "Intervertebral disc disorders with radiculopathy, lumbar region",
+          "diagnosis_text": "Lumbar disc herniation with left-sided radiculopathy",
+          "is_primary": true,
+          "source": "impression"
+        },
+        {
+          "icd10_code": "M54.16",
+          "icd10_description": "Radiculopathy, lumbar region",
+          "diagnosis_text": "Lumbar radiculopathy",
+          "is_primary": false,
+          "source": "impression"
+        }
+      ],
+      "prescriptions": [
+        {
+          "drug_name": "gabapentin",
+          "strength": "300",
+          "strength_unit": "mg",
+          "dose_form": "capsule",
+          "route": "PO",
+          "sig_text": "Take 1 po tid",
+          "quantity": 90,
+          "quantity_unit": "Capsule",
+          "refills": 1,
+          "action": "new"
+        }
+      ],
+      "imaging": [
+        {
+          "modality": "MRI",
+          "body_part": "lumbar spine",
+          "laterality": null,
+          "performed_date": "2025-05-20",
+          "interpretation_text": "MRI of the lumbar spine without contrast. Left paracentral disc herniation at L5-S1 with left lateral recess narrowing and contact with the descending left S1 nerve root. No central canal stenosis.",
+          "impression": "Left L5-S1 disc herniation with left S1 nerve root impingement."
+        }
+      ]
+    },
+    {
+      "encounter_date": "2025-07-16",
+      "provider_name": "Dorian Vance",
+      "provider_role": "MD",
+      "is_primary_provider": true,
+      "chief_complaint": "Post-operative follow-up, left L5-S1 microdiscectomy.",
+      "hpi_text": "Patient is two weeks status post left L5-S1 microdiscectomy performed 07/02/2025. Reports significant improvement in radicular leg pain, now rated 2/10, with residual mild incisional soreness. Ambulating independently and tolerating gabapentin taper. Denies fever, wound drainage, or new neurologic symptoms.",
+      "exam_text": "Lumbar incision well healed without erythema or drainage. No focal neurologic deficits. Straight leg raise negative bilaterally. Forward flexion improved, mild residual paraspinal tightness.",
+      "note_text": "Excellent early post-operative recovery with resolution of preoperative radicular symptoms. Continue tramadol as needed for residual soreness and begin a gentle home exercise program. Cleared to increase activity gradually.",
+      "operative_note": "Left L5-S1 microdiscectomy performed 07/02/2025 under general anesthesia. Estimated blood loss 25 mL. Fragment of extruded disc material removed from the left lateral recess. No dural tear. Patient tolerated the procedure well.",
+      "follow_up_raw": "Follow up in 2 weeks",
+      "signed_by": "Dorian Vance, MD",
+      "signed_at": "2025-07-16T13:30:00",
+      "body_region": "lumbar spine",
+      "laterality": "none",
+      "visit_type": "post_op",
+      "vitals": {
+        "taken_by": "T. Nguyen, MA",
+        "taken_date": "2025-07-16",
+        "bp_systolic": 128,
+        "bp_diastolic": 80,
+        "pulse": 70,
+        "respirations": 16,
+        "o2_sat": 98,
+        "temperature_f": 98.0,
+        "height_in": 70.0,
+        "weight_lbs": 209.5,
+        "bmi": 30.1,
+        "bsa": 2.11,
+        "is_patient_reported": false
+      },
+      "current_medications": [
+        {
+          "medication_name": "omeprazole",
+          "route": "Oral"
+        },
+        {
+          "medication_name": "metformin",
+          "route": "Oral"
+        },
+        {
+          "medication_name": "methocarbamol",
+          "route": "Oral"
+        },
+        {
+          "medication_name": "gabapentin",
+          "route": "Oral"
+        }
+      ],
+      "diagnoses": [
+        {
+          "icd10_code": "M51.16",
+          "icd10_description": "Intervertebral disc disorders with radiculopathy, lumbar region",
+          "diagnosis_text": "Lumbar disc herniation with left-sided radiculopathy, status post microdiscectomy",
+          "is_primary": true,
+          "source": "impression"
+        },
+        {
+          "icd10_code": "M54.16",
+          "icd10_description": "Radiculopathy, lumbar region",
+          "diagnosis_text": "Lumbar radiculopathy, improving",
+          "is_primary": false,
+          "source": "impression"
+        }
+      ],
+      "prescriptions": [
+        {
+          "drug_name": "tramadol",
+          "strength": "50",
+          "strength_unit": "mg",
+          "dose_form": "tablet",
+          "route": "PO",
+          "sig_text": "Take 1 po q6h PRN pain",
+          "quantity": 20,
+          "quantity_unit": "Tablet",
+          "refills": 0,
+          "action": "new"
+        }
+      ],
+      "imaging": []
+    }
+  ]
+}

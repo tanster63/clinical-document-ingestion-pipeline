@@ -1,0 +1,84 @@
+{
+  "chart_id": "chart_04",
+  "file_name": "EMA_20250603T084500_0000_MRN8210377_PMS5560934_PID20194719_PatientChart_400414.pdf",
+  "location_name": "Cumberland Murfreesboro",
+  "location_address": "1720 Medical Center Pkwy, Murfreesboro TN 37129",
+  "patient": {
+    "mrn": "8210377",
+    "pms_id": "5560934",
+    "family_name": "NAKAGAWA",
+    "given_name": "HIROSHI",
+    "preferred_name": "Hiro Nakagawa",
+    "date_of_birth": "1955-08-30",
+    "sex": "Male",
+    "phone_home": null
+  },
+  "encounters": [
+    {
+      "encounter_date": "2025-06-03",
+      "provider_name": "Marla Whitcomb",
+      "provider_role": "NP",
+      "is_primary_provider": true,
+      "chief_complaint": "Left heel and arch pain, worse with first steps in the morning, 2 months.",
+      "hpi_text": "Patient describes two months of left plantar heel pain that is most severe with the first steps in the morning and after periods of rest, improving somewhat with activity then worsening again by day's end. He works on his feet as a warehouse supervisor. No antecedent trauma. Has tried over-the-counter arch supports without relief.",
+      "exam_text": "Left foot: point tenderness at the medial calcaneal tuberosity, pain reproduced with passive dorsiflexion of the toes. No swelling or erythema, pulses 2+ and symmetric, sensation intact. Mild pes planus noted on standing.",
+      "note_text": "Clinical picture consistent with plantar fasciitis. Obtained weight-bearing foot films to evaluate for a heel spur and rule out stress fracture given his age and occupation. Recommended diclofenac, a night splint, calf and plantar fascia stretching, and supportive footwear.",
+      "follow_up_raw": "Follow up in 6 weeks",
+      "signed_by": "Marla Whitcomb, NP",
+      "signed_at": "2025-06-03T08:45:00",
+      "body_region": "foot/ankle",
+      "laterality": "left",
+      "visit_type": "new",
+      "current_medications": [
+        {
+          "medication_name": "metformin",
+          "route": "Oral"
+        },
+        {
+          "medication_name": "atorvastatin",
+          "route": "Oral"
+        }
+      ],
+      "diagnoses": [
+        {
+          "icd10_code": "M72.2",
+          "icd10_description": "Plantar fascial fibromatosis",
+          "diagnosis_text": "Plantar fasciitis, left foot",
+          "is_primary": true,
+          "source": "impression"
+        },
+        {
+          "icd10_code": "M79.672",
+          "icd10_description": "Pain in left foot",
+          "diagnosis_text": "Pain in left foot",
+          "is_primary": false,
+          "source": "impression"
+        }
+      ],
+      "prescriptions": [
+        {
+          "drug_name": "diclofenac",
+          "strength": "75",
+          "strength_unit": "mg",
+          "dose_form": "tablet",
+          "route": "PO",
+          "sig_text": "Take 1 po bid x 3 weeks with food",
+          "quantity": 42,
+          "quantity_unit": "Tablet",
+          "refills": 0,
+          "action": "new"
+        }
+      ],
+      "imaging": [
+        {
+          "modality": "XR",
+          "body_part": "foot",
+          "laterality": "left",
+          "performed_date": "2025-06-03",
+          "interpretation_text": "Weight-bearing views of the left foot. Small plantar calcaneal spur. No stress fracture or acute osseous abnormality. Joint spaces preserved.",
+          "impression": "Plantar calcaneal spur consistent with chronic plantar fasciitis; no acute fracture."
+        }
+      ]
+    }
+  ]
+}
