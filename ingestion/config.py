@@ -4,8 +4,8 @@ import os
 from collections.abc import Mapping
 from dataclasses import dataclass
 
-
 REQUIRED_VARS = ("GCP_PROJECT_ID", "BQ_DATASET", "GCS_BUCKET")
+
 DEFAULT_LOCATION = "us-central1"
 DEFAULT_GEMINI_MODEL = "gemini-2.5-flash"
 DEFAULT_PIPELINE_VERSION = "0.1.0"
@@ -13,11 +13,7 @@ DEFAULT_PIPELINE_VERSION = "0.1.0"
 
 @dataclass(frozen=True)
 class Config:
-    """Immutable configuration for the pipeline.
-
-    All deployment details (project ID, bucket, dataset) come from environment,
-    never from source code. No value here appears in version control.
-    """
+    """Everything the pipeline needs to know about where it is running."""
 
     project_id: str
     dataset: str
@@ -26,28 +22,27 @@ class Config:
     gemini_model: str
     pipeline_version: str
 
+    @property
+    def dataset_ref(self) -> str:
+        return f"{self.project_id}.{self.dataset}"
+
+    def table(self, name: str) -> str:
+        return f"{self.project_id}.{self.dataset}.{name}"
+
 
 def load_config(env: Mapping[str, str] | None = None) -> Config:
-    """Load configuration from environment variables.
+    """Build a Config from a mapping, defaulting to the process environment.
 
-    Args:
-        env: Mapping of environment variables. Defaults to os.environ if None.
-
-    Returns:
-        Config object with validated values.
-
-    Raises:
-        ValueError: If any required variable is missing, naming all of them.
+    Raises ValueError naming every missing variable at once, so a misconfigured
+    deploy fails on the first request with a complete message instead of one
+    variable per attempt.
     """
-    source = env if env is not None else os.environ
-
-    # Validate all required vars are present
-    missing = [var for var in REQUIRED_VARS if var not in source]
+    source: Mapping[str, str] = os.environ if env is None else env
+    missing = [name for name in REQUIRED_VARS if not source.get(name)]
     if missing:
         raise ValueError(
-            f"Missing required environment variables: {', '.join(missing)}"
+            "missing required environment variables: " + ", ".join(sorted(missing))
         )
-
     return Config(
         project_id=source["GCP_PROJECT_ID"],
         dataset=source["BQ_DATASET"],
