@@ -72,3 +72,85 @@ def test_load_pages_keeps_every_block(sample_pdf_bytes):
             raw = len([l for b in page.get_text("dict")["blocks"]
                        if b.get("type") == 0 for l in b["lines"]])
             assert len(layout.header) + len(layout.sidebar) + len(layout.body) == raw
+
+
+# --- Regression coverage added in the round-1 review fix ---------------------
+#
+# The tests above are the brief's own and must stay untouched. The tests below
+# lock in the fixes for the four review findings: a hard depth ceiling on the
+# header cut (finding 1/2/3) and a phantom sidebar manufactured on pages that
+# have no genuine gutter (finding 4).
+
+
+def test_header_cut_extends_past_the_old_fixed_search_window_for_a_deep_letterhead():
+    """A 6-line, 128pt-deep letterhead (clinic name, patient name, MRN, DOB,
+    address, phone) must land entirely in the header. The old implementation
+    hard-capped the search at 15% of the page (≈118.8pt on a standard
+    792pt-tall page), which put MRN/DOB/address/phone into body. There is no
+    internal gap within this letterhead (each row's bbox touches the next),
+    so the true boundary is the very first gap encountered on the page —
+    this pins down the "no depth ceiling" fix rather than a disguised one."""
+    width, height = 612.0, 792.0
+    blocks = [
+        block("Clinic Name", 40, 20, 300, 38),
+        block("Patient Name", 40, 38, 300, 56),
+        block("MRN: 123", 40, 56, 300, 74),
+        block("DOB: 1/1/1990", 40, 74, 300, 92),
+        block("Address line", 40, 92, 300, 110),
+        block("Phone: 555-1234", 40, 110, 300, 128),
+        block("Chief complaint: shoulder pain", 40, 170, 400, 185),
+    ]
+    header, sidebar, body = split_regions(blocks, width, height)
+    assert {b.text for b in header} == {
+        "Clinic Name", "Patient Name", "MRN: 123", "DOB: 1/1/1990",
+        "Address line", "Phone: 555-1234",
+    }
+    assert {b.text for b in body} == {"Chief complaint: shoulder pain"}
+    assert len(header) + len(sidebar) + len(body) == len(blocks)  # nothing dropped
+
+
+def test_split_regions_finds_a_real_gutter_on_a_page_that_has_one():
+    """Reaffirms real two-column pages (e.g. a medications rail) still get a
+    non-empty sidebar under the finding-4 fix, and that the partition
+    invariant holds."""
+    width, height = 612.0, 792.0
+    blocks = (
+        [block("Clinic", 40, 20)]
+        + [block(f"side {i}", 30, 200 + i * 20, 120, 210 + i * 20) for i in range(4)]
+        + [block(f"body {i}", 260, 200 + i * 20, 560, 210 + i * 20) for i in range(4)]
+    )
+    header, sidebar, body = split_regions(blocks, width, height)
+    assert len(sidebar) == 4 and len(body) == 4
+    assert all(b.text.startswith("side") for b in sidebar)
+    assert all(b.text.startswith("body") for b in body)
+    assert len(header) + len(sidebar) + len(body) == len(blocks)
+
+
+def test_split_regions_returns_empty_sidebar_when_no_gutter_exists():
+    """A continuation page whose content spans the full width (no genuine
+    two-column split, like a single-column Impression/Plan section) must not
+    have a sidebar manufactured out of a fixed fallback fraction. Everything
+    below the header lands in body instead."""
+    width, height = 612.0, 792.0
+    blocks = (
+        [block("Clinic", 40, 20)]
+        + [block(f"line {i}", 35, 200 + i * 20, 580, 210 + i * 20) for i in range(6)]
+    )
+    header, sidebar, body = split_regions(blocks, width, height)
+    assert sidebar == []
+    assert {b.text for b in body} == {f"line {i}" for i in range(6)}
+    assert len(header) + len(sidebar) + len(body) == len(blocks)
+
+
+def test_load_pages_has_no_phantom_sidebar_on_full_width_pages(sample_pdf_bytes):
+    """On the provided chart, pages 1 and 4 have a genuine sidebar (a
+    medications rail). Pages 2 (a two-column exam table), 3 (Impression/Plan,
+    single column), and 5 have no genuine gutter and must not have a sidebar
+    manufactured for them — everything below the header belongs in body."""
+    pages = load_pages(sample_pdf_bytes)
+    has_sidebar = {p.page: bool(p.sidebar) for p in pages}
+    assert has_sidebar == {1: True, 2: False, 3: False, 4: True, 5: False}
+    # Impression/Plan, previously stranded in the phantom sidebar, must now
+    # be reachable in body.
+    page3 = next(p for p in pages if p.page == 3)
+    assert "Impression/Plan" in text_of(page3.body)
