@@ -6,6 +6,7 @@ from corpus.spec_model import load_spec
 
 SPEC_DIR = Path("corpus/specs")
 SPECS = sorted(SPEC_DIR.glob("chart_*.json"))
+SAMPLE_TRUTH = Path("corpus/sample_truth.json")
 
 
 def specs():
@@ -64,6 +65,30 @@ def test_every_prescribed_drug_is_in_the_seeded_drug_class_table():
         for enc in spec.encounters:
             for rx in enc.prescriptions:
                 assert f"'{rx.drug_name.lower()}'" in seeded, rx.drug_name
+
+
+def test_sample_truth_matches_the_provided_chart():
+    """sample_truth.json is the scoring key for Task 17's extraction accuracy;
+    it must actually reflect what the provided source chart documents, not an
+    idealized/abridged version of it."""
+    truth = load_spec(SAMPLE_TRUTH)
+    assert truth.patient.mrn == "4820917"
+    assert (Path("charts/source") / truth.file_name).exists()
+    assert len(truth.encounters) == 2
+
+    enc1, enc2 = truth.encounters
+
+    # Regression: page 2 of the source chart documents a full X-Ray
+    # Interpretation Shoulder section for the 2025-07-23 visit.
+    assert len(enc1.imaging) == 1
+    assert enc1.imaging[0].modality == "XR"
+    assert enc1.imaging[0].performed_date == enc1.encounter_date
+
+    # Regression: page 5 shows Acromioclavicular Arthritis as a secondary
+    # diagnosis on both visits, not just the first.
+    for enc in (enc1, enc2):
+        diag_texts = {d.diagnosis_text for d in enc.diagnoses}
+        assert "Acromioclavicular Arthritis" in diag_texts
 
 
 def test_anti_inflammatory_and_same_day_imaging_case_exists():

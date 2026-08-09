@@ -36,7 +36,9 @@ def merge_pdfs(parts: list[bytes]) -> bytes:
     for part in parts:
         with fitz.open(stream=part, filetype="pdf") as doc:
             out.insert_pdf(doc)
-    data = out.tobytes()
+    # no_new_id: PyMuPDF otherwise stamps a fresh random trailer /ID on every
+    # save, so re-rendering an unchanged spec produces a spurious binary diff.
+    data = out.tobytes(no_new_id=True)
     out.close()
     return data
 

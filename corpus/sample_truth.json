@@ -38,7 +38,11 @@
          "sig_text": "Take 1 po qd x 2 weeks then PRN- take with food - don't take with ibuprofen or naproxen",
          "quantity": 30, "quantity_unit": "Tablet", "refills": 2, "action": "new"}
       ],
-      "imaging": []
+      "imaging": [
+        {"modality": "XR", "body_part": "shoulder", "laterality": "right", "performed_date": "2025-07-23",
+         "interpretation_text": "The following film(s) were done in our facility: right axillary view, shoulder AP view, and scapular Y view. X-rays of the right shoulder were ordered and obtained, demonstrating the following findings: There is no fracture. Visual inspection of the shoulder joint reveals no glenohumeral joint space narrowing and decreased AC joint space. Soft tissue exam shows normal soft tissue.",
+         "impression": "No fracture; no glenohumeral joint space narrowing; decreased AC joint space."}
+      ]
     },
     {
       "encounter_date": "2025-08-13",
@@ -57,7 +61,9 @@
       ],
       "diagnoses": [
         {"icd10_code": "M25.511", "icd10_description": "Pain in right shoulder",
-         "diagnosis_text": "Pain in right shoulder", "is_primary": true, "source": "impression"}
+         "diagnosis_text": "Pain in right shoulder", "is_primary": true, "source": "impression"},
+        {"icd10_code": null, "icd10_description": null,
+         "diagnosis_text": "Acromioclavicular Arthritis", "is_primary": false, "source": "impression"}
       ],
       "prescriptions": [
         {"drug_name": "meloxicam", "strength": "15", "strength_unit": "mg", "dose_form": "tablet",
