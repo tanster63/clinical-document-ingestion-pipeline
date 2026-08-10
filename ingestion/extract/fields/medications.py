@@ -1,7 +1,7 @@
 """Medications the patient was already taking, read from the sidebar snapshot.
 
-This is deliberately a different fact from a prescription written at the visit
-(§4.3). The sidebar is what the patient was on *when they walked in*; it is
+This is deliberately a different fact from a prescription written at the visit.
+The sidebar is what the patient was on *when they walked in*; it is
 valid only as of that encounter, which is why it is stored per encounter rather
 than per patient. In the provided chart meloxicam is absent in July and present
 in August, because it was prescribed in between — a patient-level medication
@@ -29,6 +29,9 @@ NON_MEDICATION_RE = re.compile(
 @dataclass(frozen=True)
 class MedicationFact:
     medication_name: str
+    strength: str | None
+    strength_unit: str | None
+    dose_form: str | None
     route: str | None
     source_page: int | None
 
@@ -47,6 +50,16 @@ def _clean_name(line: str) -> str:
     return name.strip(" -—–,·").strip()
 
 
+def _split_strength(match: re.Match[str] | None) -> tuple[str | None, str | None]:
+    """"15 mg" -> ("15", "mg"). The rail prints the dose the patient is on, and
+    dropping it makes "what dose was he taking in August?" unanswerable from a
+    chart that plainly states it."""
+    if not match:
+        return None, None
+    parts = re.match(r"(\d+(?:\.\d+)?)\s*(.+)", match.group(0).strip())
+    return (parts.group(1), parts.group(2).strip()) if parts else (None, None)
+
+
 def parse_medications(sidebar_blocks: list[Block]) -> list[MedicationFact]:
     if not sidebar_blocks:
         return []
@@ -57,10 +70,15 @@ def parse_medications(sidebar_blocks: list[Block]) -> list[MedicationFact]:
         if not line or NON_MEDICATION_RE.match(line):
             continue
         route_match = ROUTE_RE.search(line)
+        strength_match = STRENGTH_RE.search(line)
+        form_match = DOSE_FORM_RE.search(line)
         name = _clean_name(line)
         if name:
+            strength, unit = _split_strength(strength_match)
             facts.append(MedicationFact(
                 medication_name=name.lower(),
+                strength=strength, strength_unit=unit,
+                dose_form=form_match.group(0).lower() if form_match else None,
                 route=route_match.group(1) if route_match else None,
                 source_page=block.page,
             ))
