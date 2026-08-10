@@ -103,6 +103,9 @@ CREATE TABLE IF NOT EXISTS `${PROJECT}.${DATASET}.medication_snapshots` (
   encounter_id STRING NOT NULL,
   patient_id STRING NOT NULL,
   medication_name STRING NOT NULL,
+  strength STRING,
+  strength_unit STRING,
+  dose_form STRING,
   route STRING,
   source_document_id STRING,
   source_page INT64
@@ -121,6 +124,20 @@ CREATE TABLE IF NOT EXISTS `${PROJECT}.${DATASET}.imaging_studies` (
   source_document_id STRING,
   source_page INT64
 ) OPTIONS(description="One row per imaging study within an encounter.");
+
+CREATE TABLE IF NOT EXISTS `${PROJECT}.${DATASET}.procedures` (
+  procedure_id STRING NOT NULL,
+  encounter_id STRING NOT NULL,
+  patient_id STRING NOT NULL,
+  procedure_name STRING NOT NULL,
+  body_part STRING,
+  laterality STRING,
+  performed_date DATE OPTIONS(description="the date of the operation, which is not always the encounter date"),
+  surgeon_name STRING,
+  note_text STRING,
+  source_document_id STRING,
+  source_page INT64
+) OPTIONS(description="One row per surgical procedure recorded at an encounter. Distinct from a diagnosis and from a prescription: it is a thing that was done.");
 
 CREATE TABLE IF NOT EXISTS `${PROJECT}.${DATASET}.vitals` (
   encounter_id STRING NOT NULL,
@@ -168,6 +185,15 @@ CREATE TABLE IF NOT EXISTS `${PROJECT}.${DATASET}.ingestion_issues` (
   created_at TIMESTAMP,
   ingest_run_id STRING
 ) OPTIONS(description="Queryable record of every gap. A missing section lands here, not in a log.");
+
+CREATE TABLE IF NOT EXISTS `${PROJECT}.${DATASET}.patient_history` (
+  history_id STRING NOT NULL,
+  patient_id STRING NOT NULL,
+  history_type STRING OPTIONS(description="medical|musculoskeletal|family|musculoskeletal_surgery|surgical|social|allergy"),
+  item_text STRING NOT NULL,
+  source_document_id STRING,
+  source_page INT64
+) OPTIONS(description="One row per recorded history item for a patient. Patient-level, not visit-level: the left rail carries context true of the patient rather than of the encounter.");
 
 -- Run-level audit. Added during implementation: a download that fails never
 -- produces a `documents` row, so without this table the most interesting

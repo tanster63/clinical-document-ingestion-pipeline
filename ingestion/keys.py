@@ -1,7 +1,7 @@
 """Deterministic keys.
 
 Keys are derived from natural business identity, never from the file that
-happened to carry the record (§4.3). That is what makes MERGE idempotent when
+happened to carry the record. That is what makes MERGE idempotent when
 the same encounter arrives inside two differently-sliced exports: a re-export
 covering July and August produces the same two encounter keys as the original,
 so the merge updates two rows instead of inserting two more.
@@ -65,14 +65,32 @@ def imaging_key(encounter_id: str, modality: str, body_part: str | None,
                       performed_date.isoformat() if performed_date else "")
 
 
-def exam_finding_key(encounter_id: str, body_part: str | None, finding_type: str,
-                     measure_name: str | None, ordinal: int) -> str:
-    return sha256_key("exam", encounter_id, _normalize(body_part), finding_type,
-                      _normalize(measure_name), ordinal)
+def procedure_key(encounter_id: str, procedure_name: str, performed_date: date | None) -> str:
+    return sha256_key("procedure", encounter_id, _normalize(procedure_name),
+                      performed_date.isoformat() if performed_date else "")
 
 
-def issue_key(document_id: str, ordinal: int, issue_type: str,
+def exam_finding_key(encounter_id: str, body_part: str | None, laterality: str | None,
+                     finding_type: str, measure_name: str | None, ordinal: int) -> str:
+    """Keyed on what the finding *is*, falling back to position only for
+    narrative rows that carry no measure name to identify them by."""
+    return sha256_key("exam", encounter_id, _normalize(body_part), _normalize(laterality),
+                      finding_type, _normalize(measure_name),
+                      "" if measure_name else ordinal)
+
+
+def history_key(patient_id: str, history_type: str, item_text: str) -> str:
+    return sha256_key("history", patient_id, history_type, _normalize(item_text))
+
+
+def issue_key(scope: str, encounter_date: date | None, issue_type: str,
               field_name: str | None) -> str:
-    """Stable across re-runs on purpose: the same document detecting the same
-    gap must update one issue row, not accumulate a new one per run."""
-    return sha256_key("issue", document_id, ordinal, issue_type, _normalize(field_name))
+    """Keyed on the gap, not on the file that revealed it.
+
+    Stable across re-runs, and — because `document_id` is the file's content
+    hash — also across a genuine re-export. Keying on the document would make a
+    corrected export report every one of its predecessor's gaps a second time.
+    """
+    return sha256_key("issue", scope,
+                      encounter_date.isoformat() if encounter_date else "",
+                      issue_type, _normalize(field_name))

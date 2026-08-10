@@ -1,11 +1,11 @@
 """Validated warehouse contracts.
 
-Nothing reaches BigQuery without passing through these models (§6.1). Field
+Nothing reaches BigQuery without passing through these models. Field
 names and types mirror `sql/ddl/schema.sql` one-for-one, so a row that
 validates here loads there without a translation layer to drift out of sync.
 
 A row that fails validation is dropped and recorded as an `ingestion_issues`
-row; the rest of the document still lands (§6.4). Ranges are clinical sanity
+row; the rest of the document still lands. Ranges are clinical sanity
 bounds, not style: a systolic pressure of 900 is a parse error wearing a
 number's clothes, and it is better refused at the door than queried later.
 """
@@ -81,7 +81,7 @@ class Encounter(Row):
     is_primary_provider: bool | None = None
     location_name: str | None = None
     chief_complaint_raw: str | None = None
-    # --- the only LLM-derived columns in the warehouse (§6.3) -----------------
+    # --- the only LLM-derived columns in the warehouse ------------------------
     body_region: str | None = None
     laterality: Laterality | None = None
     visit_type: VisitType | None = None
@@ -160,13 +160,55 @@ class MedicationSnapshot(Row):
     """What the patient was already taking, as of one encounter.
 
     Not a patient attribute: the same patient's list differs between visits,
-    and flattening it to patient level destroys that (§4.3).
+    and flattening it to patient level destroys that.
     """
 
     encounter_id: str
     patient_id: str
     medication_name: NonEmpty
+    strength: str | None = None
+    strength_unit: str | None = None
+    dose_form: str | None = None
     route: str | None = None
+    source_document_id: str | None = None
+    source_page: int | None = None
+
+
+class PatientHistory(Row):
+    """A longitudinal fact about the patient, read from the left rail.
+
+    Patient-level on purpose: unlike the medication list beside it, a
+    surgical or family history does not change between two visits three weeks
+    apart, and storing it per encounter would multiply one fact by the number
+    of times the chart happened to print it.
+    """
+
+    history_id: str
+    patient_id: str
+    history_type: Literal["medical", "musculoskeletal", "family",
+                          "musculoskeletal_surgery", "surgical", "social", "allergy"]
+    item_text: NonEmpty
+    source_document_id: str | None = None
+    source_page: int | None = None
+
+
+class Procedure(Row):
+    """Something that was done to the patient, at an encounter.
+
+    `performed_date` is separate from the encounter date on purpose: an
+    operation is usually reported at the visit *after* it, and collapsing the
+    two would date every procedure to its follow-up appointment.
+    """
+
+    procedure_id: str
+    encounter_id: str
+    patient_id: str
+    procedure_name: NonEmpty
+    body_part: str | None = None
+    laterality: Laterality | None = None
+    performed_date: date | None = None
+    surgeon_name: str | None = None
+    note_text: str | None = None
     source_document_id: str | None = None
     source_page: int | None = None
 
@@ -233,12 +275,17 @@ class ExtractedDocument(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     document: Document
-    patient: Patient
+    # None when the file never opened, or opened but carried no identity at all.
+    # A fabricated placeholder patient would be a row nobody can trace to a
+    # person, sitting in the table clinical questions are counted from.
+    patient: Patient | None = None
     encounters: list[Encounter] = Field(default_factory=list)
     vitals: list[Vitals] = Field(default_factory=list)
     diagnoses: list[Diagnosis] = Field(default_factory=list)
     prescriptions: list[Prescription] = Field(default_factory=list)
     medications: list[MedicationSnapshot] = Field(default_factory=list)
+    history: list[PatientHistory] = Field(default_factory=list)
+    procedures: list[Procedure] = Field(default_factory=list)
     imaging: list[ImagingStudy] = Field(default_factory=list)
     exam_findings: list[ExamFinding] = Field(default_factory=list)
     issues: list[IngestionIssue] = Field(default_factory=list)
