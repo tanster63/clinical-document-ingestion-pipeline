@@ -1,6 +1,6 @@
 """Read-only tools exposed to the ADK agent.
 
-The agent reads views, never base tables (§7). The views carry the joins and the
+The agent reads views, never base tables. The views carry the joins and the
 column names a clinical question actually uses, which keeps generated SQL simple
 and leaves the physical schema free to change.
 
@@ -22,13 +22,16 @@ MAX_ROWS = 200
 MAX_SCAN_BYTES = 200 * 1024 * 1024  # 200 MB
 ALLOWED_VIEWS = ("v_encounter_summary", "v_patient_timeline")
 
+# REPLACE is deliberately absent: it is a read-only BigQuery string function and
+# a SELECT * REPLACE(...) modifier. The only dangerous form is CREATE OR REPLACE,
+# and CREATE already catches that.
 FORBIDDEN_RE = re.compile(
     r"\b(INSERT|UPDATE|DELETE|MERGE|DROP|CREATE|ALTER|TRUNCATE|GRANT|REVOKE|"
-    r"REPLACE|CALL|EXPORT|LOAD|ASSERT|EXECUTE)\b",
+    r"CALL|EXPORT|LOAD|ASSERT|EXECUTE)\b",
     re.IGNORECASE,
 )
 STRING_LITERAL_RE = re.compile(r"'[^']*'|\"[^\"]*\"")
-LIMIT_RE = re.compile(r"\bLIMIT\s+(\d+)\s*$", re.IGNORECASE)
+LIMIT_RE = re.compile(r"\bLIMIT\s+(\d+)(\s+OFFSET\s+\d+)?\s*$", re.IGNORECASE)
 TABLE_REF_RE = re.compile(
     r"\bFROM\s+`?([A-Za-z0-9_.\-]+)`?|\bJOIN\s+`?([A-Za-z0-9_.\-]+)`?", re.IGNORECASE
 )
@@ -37,6 +40,12 @@ UNNEST_RE = re.compile(r"\bUNNEST\s*\(", re.IGNORECASE)
 # Names bound by a WITH clause are references to the query's own intermediate
 # results, not to anything in the dataset.
 CTE_RE = re.compile(r"(?:\bWITH\b|,)\s*([A-Za-z_]\w*)\s+AS\s*\(", re.IGNORECASE)
+# EXTRACT(MONTH FROM encounter_date) contains the word FROM but names no table.
+# Refusing it would reject every date-part filter and grouping — which is the
+# natural SQL for "his July visit" and for "last quarter".
+FUNCTION_FROM_RE = re.compile(
+    r"\b(EXTRACT|SUBSTR|SUBSTRING|TRIM|LTRIM|RTRIM)\s*\([^()]*\)", re.IGNORECASE
+)
 
 
 class SqlGuardError(ValueError):
@@ -53,7 +62,7 @@ def guard_sql(query: str, cfg) -> str:
     if not query:
         raise SqlGuardError("empty query")
 
-    skeleton = UNNEST_RE.sub("(", _strip_literals(query))
+    skeleton = FUNCTION_FROM_RE.sub("()", UNNEST_RE.sub("(", _strip_literals(query)))
 
     if not re.match(r"^\s*(SELECT|WITH)\b", skeleton, re.IGNORECASE):
         raise SqlGuardError("only SELECT and WITH queries are allowed")
@@ -88,7 +97,8 @@ def guard_sql(query: str, cfg) -> str:
     existing = LIMIT_RE.search(skeleton)
     if existing:
         if int(existing.group(1)) > MAX_ROWS:
-            query = LIMIT_RE.sub(f"LIMIT {MAX_ROWS}", query)
+            offset = existing.group(2) or ""
+            query = LIMIT_RE.sub(f"LIMIT {MAX_ROWS}{offset}", query)
     else:
         query = f"{query}\nLIMIT {MAX_ROWS}"
     return query
@@ -103,6 +113,21 @@ def _rows(job) -> list[dict]:
     return [dict(row) for row in job.result()]
 
 
+def _describe(field) -> dict:
+    """One column, including the fields nested inside a repeated record.
+
+    Without recursing, a timeline row reads as five opaque RECORD columns and
+    the agent cannot discover `prescriptions_written.is_anti_inflammatory` —
+    the exact column the brief's cross-table question turns on — even though it
+    was told to read column names from here rather than guess them.
+    """
+    described = {"name": field.name, "type": field.field_type, "mode": field.mode,
+                 "description": field.description}
+    if field.fields:
+        described["fields"] = [_describe(nested) for nested in field.fields]
+    return described
+
+
 def get_schema() -> dict:
     """Describe the queryable views: their columns, types, and descriptions.
 
@@ -115,17 +140,18 @@ def get_schema() -> dict:
         table = client.get_table(cfg.table(view))
         described[view] = {
             "description": table.description,
-            "columns": [
-                {"name": f.name, "type": f.field_type, "description": f.description}
-                for f in table.schema
-            ],
+            "columns": [_describe(f) for f in table.schema],
         }
     return {
         "dataset": cfg.dataset,
         "views": described,
-        "note": "Only these views are readable. Queries are SELECT-only and row-limited. "
-                "medications_on_arrival is what the patient was already taking as of that "
-                "encounter; prescriptions_written is what was prescribed at it.",
+        "note": "Only these views are readable, and queries are SELECT-only and "
+                "row-limited. Two distinctions matter: medications_on_arrival is what the "
+                "patient was ALREADY taking as of that encounter, prescriptions_written is "
+                "what was prescribed AT it; and primary_body_region is decoded "
+                "deterministically from the ICD-10 code while body_region is model-derived "
+                "and may be NULL. Group population questions by body_region_effective or "
+                "by primary_icd10_code, never by free-text description.",
     }
 
 
