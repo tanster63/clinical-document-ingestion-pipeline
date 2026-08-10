@@ -12,6 +12,7 @@ requires-python = ">=3.11"
 testpaths = ["tests"]
 pythonpath = ["."]
 addopts = "-q"
+markers = ["golden: runs against the provided sample chart"]
 filterwarnings = [
     # PyMuPDF's SWIG bindings trip this on import under Python 3.11+; not our code.
     "ignore:builtin type .*has no __module__ attribute:DeprecationWarning",
