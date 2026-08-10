@@ -1,6 +1,6 @@
 """Cloud Run ingest service.
 
-Two entry points onto one code path (§3):
+Two entry points onto one code path:
 
   POST /ingest  — manual, for backfill and demos; failures return 5xx so a human
                   caller sees a real error.
@@ -30,6 +30,7 @@ log = logging.getLogger("ingest")
 app = FastAPI(title="Clinical Document Ingestion", version="1.0")
 SUPPORTED_SUFFIXES = (".pdf",)
 FINALIZED_EVENT = "google.cloud.storage.object.v1.finalized"
+RUN_STATUS = {"ok": "succeeded", "partial": "partial", "failed": "failed"}
 
 
 class IngestRequest(BaseModel):
@@ -106,8 +107,11 @@ def ingest_object(
 
     warnings = sum(1 for i in doc.issues if i.severity == "warn")
     errors = sum(1 for i in doc.issues if i.severity == "error")
+    # Taken from the document rather than counted from issues, so that an
+    # operator querying ingest_runs for status='failed' sees the same set of
+    # documents as one querying documents for parse_status='failed'.
     return finish(
-        "partial" if errors else "succeeded",
+        RUN_STATUS[doc.document.parse_status],
         document_id=doc.document.document_id,
         encounters=len(doc.encounters), warnings=warnings, errors=errors,
     )

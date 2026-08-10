@@ -72,11 +72,18 @@ def charts() -> list[Path]:
 
 
 def ingest_all(warehouse: LocalWarehouse, paths: list[Path]) -> list:
+    """Every chart, independently. One unreadable file costs its own row and
+    nothing else — the same posture the deployed service takes."""
     documents = []
     for path in paths:
-        doc = extract_document(path.read_bytes(), file_name=path.name, cfg=LOCAL_CONFIG,
-                               gcs_uri=f"file://{path}")
-        warehouse.write_document(doc)
+        try:
+            doc = extract_document(path.read_bytes(), file_name=path.name,
+                                   cfg=LOCAL_CONFIG, gcs_uri=f"file://{path}")
+            warehouse.write_document(doc)
+        except Exception as exc:                      # noqa: BLE001 - reported, not raised
+            print(f"  ! {path.name}: {type(exc).__name__}: {exc}", file=sys.stderr)
+            documents.append(None)
+            continue
         documents.append(doc)
     return documents
 
@@ -98,6 +105,10 @@ def main() -> int:
     print(f"{'chart':<40} {'enc':>4} {'dx':>4} {'rx':>4} {'med':>4} {'img':>4} "
           f"{'vit':>4} {'exam':>5}  status")
     for path, doc in zip(paths, documents):
+        if doc is None:
+            print(f"{path.name[:40]:<40} {'-':>4} {'-':>4} {'-':>4} {'-':>4} {'-':>4} "
+                  f"{'-':>4} {'-':>5}  unreadable")
+            continue
         print(f"{path.name[:40]:<40} {len(doc.encounters):>4} {len(doc.diagnoses):>4} "
               f"{len(doc.prescriptions):>4} {len(doc.medications):>4} "
               f"{len(doc.imaging):>4} {len(doc.vitals):>4} {len(doc.exam_findings):>5}  "
@@ -108,8 +119,9 @@ def main() -> int:
     for table, count in first.items():
         print(f"  {table:<24} {count:>5}")
 
-    warnings = [i for doc in documents for i in doc.issues if i.severity == "warn"]
-    errors = [i for doc in documents for i in doc.issues if i.severity == "error"]
+    landed = [doc for doc in documents if doc is not None]
+    warnings = [i for doc in landed for i in doc.issues if i.severity == "warn"]
+    errors = [i for doc in landed for i in doc.issues if i.severity == "error"]
     print(f"\nissues recorded: {len(warnings)} warn, {len(errors)} error")
     for issue in warnings:
         print(f"  warn  {issue.issue_type:<16} {issue.field_name or '-':<14} {issue.detail}")

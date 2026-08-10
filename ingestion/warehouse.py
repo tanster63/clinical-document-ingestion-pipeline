@@ -1,6 +1,6 @@
 """BigQuery writer.
 
-Idempotency (§4.3) lives here. Rows land in a per-run staging table via a
+Idempotency lives here. Rows land in a per-run staging table via a
 **load job**, then MERGE into the target on the natural key.
 
 Two details are load-bearing and easy to get wrong:
@@ -36,6 +36,8 @@ MERGE_KEYS: dict[str, tuple[str, ...]] = {
     "diagnoses": ("diagnosis_id",),
     "prescriptions": ("prescription_id",),
     "medication_snapshots": ("encounter_id", "medication_name"),
+    "patient_history": ("history_id",),
+    "procedures": ("procedure_id",),
     "imaging_studies": ("imaging_id",),
     "exam_findings": ("finding_id",),
     "ingestion_issues": ("issue_id",),
@@ -43,6 +45,20 @@ MERGE_KEYS: dict[str, tuple[str, ...]] = {
 }
 
 STAGING_TTL_HOURS = 6
+SEPARATOR = "\x1f"
+
+# Child tables whose rows belong to an encounter, with the SQL expression that
+# reconstructs their merge key. Anything not listed is either patient-level or
+# an audit record, and is never swept.
+SWEPT_TABLES: dict[str, str] = {
+    "vitals": "encounter_id",
+    "diagnoses": "diagnosis_id",
+    "prescriptions": "prescription_id",
+    "medication_snapshots": f"CONCAT(encounter_id, '{SEPARATOR}', medication_name)",
+    "procedures": "procedure_id",
+    "imaging_studies": "imaging_id",
+    "exam_findings": "finding_id",
+}
 
 REFRESH_STATEMENTS = (
     # A patient's visit ordinal is warehouse-wide, so it cannot be trusted from
@@ -61,7 +77,7 @@ REFRESH_STATEMENTS = (
     """,
     # Drug class is a property of the drug. Resolving it from the seed table
     # rather than from the model is what makes "on an anti-inflammatory"
-    # answerable without anything being able to hallucinate a class (§4.3).
+    # answerable without anything being able to hallucinate a class.
     """
     UPDATE `{prescriptions}` rx
     SET drug_class = rdc.drug_class
@@ -89,20 +105,38 @@ def rows_for(doc: ExtractedDocument) -> dict[str, list[dict]]:
     """Table name -> JSON-safe rows. Tables with nothing to write are omitted."""
     candidates = {
         "documents": [doc.document],
-        "patients": [doc.patient],
+        "patients": [doc.patient] if doc.patient else [],
         "encounters": doc.encounters,
         "vitals": doc.vitals,
         "diagnoses": doc.diagnoses,
         "prescriptions": doc.prescriptions,
         "medication_snapshots": doc.medications,
+        "patient_history": doc.history,
+        "procedures": doc.procedures,
         "imaging_studies": doc.imaging,
         "exam_findings": doc.exam_findings,
         "ingestion_issues": doc.issues,
     }
     return {
-        table: [row.to_row() for row in rows]
+        table: _deduplicate(table, [row.to_row() for row in rows])
         for table, rows in candidates.items() if rows
     }
+
+
+def _deduplicate(table: str, rows: list[dict]) -> list[dict]:
+    """One row per merge key, last one winning.
+
+    A chart that lists the same drug twice in one visit's rail produces two rows
+    with one key. BigQuery does not tolerate that: MERGE raises
+    "UPDATE/MERGE must match at most one source row" the moment the target
+    already holds the key, so the failure appears on the *second* ingest of a
+    chart that loaded cleanly the first time.
+    """
+    keys = MERGE_KEYS[table]
+    collapsed: dict[tuple, dict] = {}
+    for row in rows:
+        collapsed[tuple(row.get(key) for key in keys)] = row
+    return list(collapsed.values())
 
 
 def merge_sql(cfg: Config, table: str, staging_table: str, columns: list[str]) -> str:
@@ -171,15 +205,48 @@ class Warehouse:
             self.client.delete_table(self.cfg.table(staging), not_found_ok=True)
 
     def write_document(self, doc: ExtractedDocument) -> dict[str, int]:
-        """MERGE every non-empty table, then recompute derived columns.
+        """MERGE every non-empty table, sweep rows this document no longer
+        produces, then recompute derived columns.
 
         Returns table -> rows affected.
         """
+        rows = rows_for(doc)
         written: dict[str, int] = {}
-        for table, rows in rows_for(doc).items():
-            written[table] = self._merge(table, rows)
+        for table, table_rows in rows.items():
+            written[table] = self._merge(table, table_rows)
+        self._sweep(doc, rows)
         self.refresh_derived()
         return written
+
+    def _sweep(self, doc: ExtractedDocument, rows: dict[str, list[dict]]) -> None:
+        """Delete child rows the document used to produce and no longer does.
+
+        MERGE alone converges only for byte-identical input against an unchanged
+        parser. A corrected re-export that drops a diagnosis, or a parser fix
+        that stops emitting a spurious row, would otherwise leave the old row
+        sitting beside the new ones for ever — and "re-ingesting leaves the
+        dataset in the same state" would quietly stop being true.
+
+        The sweep is scoped to the encounters this document actually carries, so
+        two documents covering different visits never delete each other's rows.
+        """
+        encounter_ids = [e.encounter_id for e in doc.encounters]
+        if not encounter_ids:
+            return
+        for table, key_expression in SWEPT_TABLES.items():
+            keep = [
+                SEPARATOR.join(str(row[column]) for column in MERGE_KEYS[table])
+                for row in rows.get(table, [])
+            ]
+            self.client.query(
+                f"DELETE FROM `{self.cfg.table(table)}` "
+                f"WHERE encounter_id IN UNNEST(@encounters) "
+                f"AND {key_expression} NOT IN UNNEST(@keep)",
+                job_config=bigquery.QueryJobConfig(query_parameters=[
+                    bigquery.ArrayQueryParameter("encounters", "STRING", encounter_ids),
+                    bigquery.ArrayQueryParameter("keep", "STRING", keep),
+                ]),
+            ).result()
 
     def refresh_derived(self) -> None:
         for statement in refresh_sql(self.cfg):
