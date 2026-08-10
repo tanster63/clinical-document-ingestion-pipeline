@@ -30,6 +30,15 @@ HEADER_GAP_NOISE_FLOOR = ROW_TOLERANCE
 # gap is allowed to be trusted, so a taller header simply needs a taller
 # qualifying run or a second row, never a fixed pixel ceiling.
 MIN_STRUCTURAL_RUN_HEIGHT = ROW_TOLERANCE * 12
+# When only a single short run precedes a candidate gap (too little evidence
+# for the row-count or accumulated-height gates above), the gap is still
+# trusted if it is at least this many multiples of that run's own height.
+# Ordinary line-to-line leading for text of a given size is a fraction of
+# that size, not multiples of it, so a gap this much larger than the one
+# line above it cannot be routine leading — it is measured relative to the
+# run's own height, so it scales with font size rather than being a fixed
+# pixel amount.
+SINGLE_ROW_GAP_MULTIPLE = 2.0
 
 
 @dataclass(frozen=True)
@@ -104,14 +113,21 @@ def header_cut_y(blocks: list[Block], height: float) -> float:
 
     Instead a candidate gap is only trusted once *some* structural content
     has accumulated above it — either a second, separately-delimited row
-    (row_count >= 2), or a single run already taller than
+    (row_count >= 2), a single run already taller than
     MIN_STRUCTURAL_RUN_HEIGHT (covers a tightly-packed, gapless multi-line
-    letterhead that never registers a second row) — and even then only if
-    it is larger than every gap rejected before it (a running "new local
-    maximum" requirement, seeded at HEADER_GAP_NOISE_FLOOR so pure jitter
-    can never seed the comparison). This lets the first small intra-header
-    gap be skipped as noise while the very next, genuinely larger gap is
-    accepted regardless of how deep on the page it falls.
+    letterhead that never registers a second row), or — when there is only
+    one short row and neither of those apply — a gap at least
+    SINGLE_ROW_GAP_MULTIPLE times that row's own height (covers a genuine
+    single-line header, e.g. just a clinic name, followed by real
+    whitespace; the ratio keeps this relative to the row's own font size
+    rather than a fixed pixel amount, so it does not fire on ordinary
+    line-to-line leading in body text, which is a fraction of a line's
+    height, not a multiple of it). Even when trustworthy, a gap is only
+    accepted if it is larger than every gap rejected before it (a running
+    "new local maximum" requirement, seeded at HEADER_GAP_NOISE_FLOOR so
+    pure jitter can never seed the comparison). This lets the first small
+    intra-header gap be skipped as noise while the very next, genuinely
+    larger gap is accepted regardless of how deep on the page it falls.
     """
     bins = max(1, round(height))
     bin_h = height / bins
@@ -124,6 +140,7 @@ def header_cut_y(blocks: list[Block], height: float) -> float:
 
     row_count = 0
     accumulated_height = 0.0
+    last_run_height = 0.0
     max_prior_gap = 0.0
     run_start: int | None = None
     gap_start: int | None = None
@@ -134,7 +151,11 @@ def header_cut_y(blocks: list[Block], height: float) -> float:
             seen_content = True
             if gap_start is not None:
                 gap_len = (i - gap_start) * bin_h
-                trustworthy = row_count >= 2 or accumulated_height >= MIN_STRUCTURAL_RUN_HEIGHT
+                trustworthy = (
+                    row_count >= 2
+                    or accumulated_height >= MIN_STRUCTURAL_RUN_HEIGHT
+                    or (row_count == 1 and gap_len > SINGLE_ROW_GAP_MULTIPLE * last_run_height)
+                )
                 if trustworthy and gap_len > max(max_prior_gap, HEADER_GAP_NOISE_FLOOR):
                     return (gap_start + i) / 2 * bin_h
                 max_prior_gap = max(max_prior_gap, gap_len)
@@ -144,7 +165,8 @@ def header_cut_y(blocks: list[Block], height: float) -> float:
             continue
         # Empty bin: close out any run that just ended.
         if run_start is not None:
-            accumulated_height += (i - run_start) * bin_h
+            last_run_height = (i - run_start) * bin_h
+            accumulated_height += last_run_height
             row_count += 1
             run_start = None
         if not seen_content:

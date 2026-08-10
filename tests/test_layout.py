@@ -130,15 +130,33 @@ def test_split_regions_returns_empty_sidebar_when_no_gutter_exists():
     """A continuation page whose content spans the full width (no genuine
     two-column split, like a single-column Impression/Plan section) must not
     have a sidebar manufactured out of a fixed fallback fraction. Everything
-    below the header lands in body instead."""
+    below the header lands in body instead.
+
+    Rebuilt in the round-2 review fix: the original version of this fixture
+    (every body line spanning past x1=580, well beyond even the old fallback
+    cut of width * FALLBACK_GUTTER_FRACTION = 171.36) produced an empty
+    sidebar under both the old fallback-fraction implementation and the new
+    None-returning one, so it never actually exercised the fix — it passed
+    for the wrong reason. This fixture instead places two narrow columns
+    with a 5pt near-touching gap at x=160-165: too thin to be a genuine
+    gutter (gutter_x correctly returns None for it), but wide enough that
+    the OLD fallback cut of 171.36 would have sliced through it and
+    wrongly captured every "left" block into a phantom sidebar. Confirmed
+    by simulating the old fallback against this exact fixture: it returns
+    sidebar=['left 0','left 1','left 2','left 3'], body=the four "right"
+    blocks — different from, and wrong compared to, the correct result
+    asserted below."""
     width, height = 612.0, 792.0
-    blocks = (
-        [block("Clinic", 40, 20)]
-        + [block(f"line {i}", 35, 200 + i * 20, 580, 210 + i * 20) for i in range(6)]
-    )
+    blocks = [block("Clinic", 40, 20)]
+    for i in range(4):
+        blocks.append(block(f"left {i}", 30, 200 + i * 20, 160, 210 + i * 20))
+        blocks.append(block(f"right {i}", 165, 200 + i * 20, 580, 210 + i * 20))
+
     header, sidebar, body = split_regions(blocks, width, height)
     assert sidebar == []
-    assert {b.text for b in body} == {f"line {i}" for i in range(6)}
+    assert {b.text for b in body} == {f"left {i}" for i in range(4)} | {
+        f"right {i}" for i in range(4)
+    }
     assert len(header) + len(sidebar) + len(body) == len(blocks)
 
 
@@ -154,3 +172,89 @@ def test_load_pages_has_no_phantom_sidebar_on_full_width_pages(sample_pdf_bytes)
     # be reachable in body.
     page3 = next(p for p in pages if p.page == 3)
     assert "Impression/Plan" in text_of(page3.body)
+
+
+# --- Regression coverage added in the round-2 review fix ---------------------
+#
+# Again, everything above (including the round-1 additions) stays untouched.
+
+
+def test_header_cut_uses_glyph_extent_not_baseline_distance():
+    """A tall title (30pt) sitting directly above normal-height fields
+    (12pt) must not fool the cut into treating the title-to-next-line
+    baseline distance as the header/body gap. This is the real chart's
+    documented failure mode: a large glyph bounding box makes the
+    baseline-to-baseline distance between two header lines bigger than the
+    true whitespace gap separating the header band from the body.
+
+    Numbers: title spans y=20-50 (30pt tall); the next three header lines
+    are 12pt each with only a 2pt true whitespace gap between them; the
+    real header/body gap is 18pt. A baseline-point algorithm sees a 32pt
+    title-to-next-line distance (50pt... no: next.y0(52) - title.y0(20) =
+    32) that beats every other baseline gap on the page, including the
+    30pt final gap to body (measured baseline-to-baseline, since the last
+    header row is 12pt tall: 110 - 80 = 30) — so a baseline-only cut lands
+    on the fallback fraction (142.56) and drags "Chief complaint" into the
+    header. The glyph-extent cut instead finds the true 18pt gap regardless
+    of the title's tall bounding box.
+    """
+    width, height = 612.0, 792.0
+    blocks = [
+        block("Clinic Name", 40, 20, 300, 50),      # 30pt tall title
+        block("Visit Note", 40, 52, 300, 64),       # 12pt; extent-gap=2 from title
+        block("MRN: 123", 40, 66, 300, 78),         # 12pt; extent-gap=2
+        block("DOB: 1/1/1990", 40, 80, 300, 92),    # 12pt; extent-gap=2
+        block("Chief complaint: shoulder pain", 40, 110, 400, 122),  # extent-gap=18
+    ]
+    header, sidebar, body = split_regions(blocks, width, height)
+    assert {b.text for b in header} == {
+        "Clinic Name", "Visit Note", "MRN: 123", "DOB: 1/1/1990",
+    }
+    assert {b.text for b in body} == {"Chief complaint: shoulder pain"}
+    assert len(header) + len(sidebar) + len(body) == len(blocks)
+
+
+def test_header_cut_admits_a_well_separated_single_line_header():
+    """A one-line header (just a clinic name) followed by a genuine 28pt
+    gap must not fall through to the fixed fallback fraction. A single
+    short run gives header_cut_y no second row and no tall accumulated run
+    to build ordinary evidence from, so without a relative escape hatch
+    this gap is rejected as untrustworthy and five body blocks get
+    misfiled into header (repro: cut lands at exactly
+    height * FALLBACK_HEADER_FRACTION = 142.56, not at the real gap)."""
+    width, height = 612.0, 792.0
+    blocks = [
+        block("Clinic", 40, 20, 300, 32),  # 12pt tall, single row
+        block("Chief complaint: shoulder pain", 40, 60, 400, 72),  # gap=28
+        block("HPI: patient reports pain", 40, 74, 400, 86),
+    ]
+    header, sidebar, body = split_regions(blocks, width, height)
+    assert {b.text for b in header} == {"Clinic"}
+    assert {b.text for b in body} == {
+        "Chief complaint: shoulder pain", "HPI: patient reports pain",
+    }
+    assert len(header) + len(sidebar) + len(body) == len(blocks)
+
+
+def test_header_cut_rejects_single_line_leading_that_looks_like_body_text():
+    """The other side of the single-row discriminator: a gap only modestly
+    bigger than the single row above it (16pt gap after a 12pt line, ratio
+    1.33, well under SINGLE_ROW_GAP_MULTIPLE) reads as ordinary paragraph
+    leading, not a section break, and must not isolate that first line into
+    its own header — unlike the 28pt/12pt (ratio 2.33) case above. No gap
+    on this page ever becomes trustworthy, so the cut falls through to the
+    fixed fallback fraction and every block (whose y0 is under that
+    fallback) lands in header together — the fix must not carve the first
+    line out on its own."""
+    blocks = [
+        block("continued from previous page", 40, 20, 300, 32),
+        block("more body text here", 40, 48, 300, 60),
+        block("even more body text", 40, 62, 300, 74),
+    ]
+    header, sidebar, body = split_regions(blocks, 612.0, 792.0)
+    assert {b.text for b in header} != {"continued from previous page"}
+    assert {b.text for b in header} == {
+        "continued from previous page", "more body text here", "even more body text",
+    }
+    assert body == []
+    assert len(header) + len(sidebar) + len(body) == len(blocks)
