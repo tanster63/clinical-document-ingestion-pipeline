@@ -4,72 +4,148 @@
   "location_name": "Cumberland Brentwood",
   "location_address": "4410 Maryland Farms, Brentwood TN 37027",
   "patient": {
-    "mrn": "4820917", "pms_id": "4820917",
-    "family_name": "BARLOW", "given_name": "TREMAINE", "preferred_name": "Trey Barlow",
-    "date_of_birth": "1991-09-15", "sex": "Male", "phone_home": "(615) 555-0173"
+    "mrn": "4820917",
+    "pms_id": "4820917",
+    "family_name": "BARLOW",
+    "given_name": "TREMAINE",
+    "preferred_name": "Trey Barlow",
+    "date_of_birth": "1991-09-15",
+    "sex": "Male",
+    "phone_home": "(615) 555-0173"
   },
   "encounters": [
     {
       "encounter_date": "2025-07-23",
-      "provider_name": "Marla Whitcomb", "provider_role": "NP", "is_primary_provider": true,
+      "provider_name": "Marla Whitcomb",
+      "provider_role": "NP",
+      "is_primary_provider": true,
       "chief_complaint": "Right Shoulder Pain",
       "hpi_text": "This is a 33 year old male who: is being seen for a chief complaint of shoulder pain, involving the right shoulder. This occurred in the context of patient states he was working out and noticed pain on 6/24/25. He is presenting with right shoulder pain that he localizes to the superior aspect of the shoulder that began during a workout on June 24. He notes that he began having some throbbing in the area when he was doing presses at the gym. Gradually got worse after that. Has had some improvement but it has not resolved. He has been trying to adjust his activity and use heat, ice, and Biofreeze. He is right-hand dominant and reports no history of any problems with the right shoulder but he did have similar symptoms on the left shoulder in the past.",
       "note_text": "Symptoms today are most consistent with AC arthrosis. I reviewed the x-ray images with him which show some subtle narrowing at the AC joint. On exam today he has tenderness in the area and pain with cross chest hyperabduction. I recommended that we take a conservative approach to treatment with a 2-week course of nonsteroidals. I have given him a prescription for meloxicam and discussed appropriate use of the medication. I will plan to see him again in 3 weeks to check his progress. I might consider either an injection or an MRI at that point depending on his response.",
-      "signed_by": "Marla Whitcomb, NP", "signed_at": "2025-07-23T14:37:00",
+      "signed_by": "Marla Whitcomb, NP",
+      "signed_at": "2025-07-23T14:37:00",
       "follow_up_raw": "Follow up in 3 weeks",
-      "body_region": "shoulder", "laterality": "right", "visit_type": "new",
+      "follow_up_days": 21,
+      "body_region": "shoulder",
+      "laterality": "right",
+      "visit_type": "new",
       "vitals": {
-        "height_in": 67.0, "weight_lbs": 273.2, "bmi": 42.8, "bsa": 2.3,
+        "height_in": 67.0,
+        "weight_lbs": 273.2,
+        "bmi": 42.8,
+        "bsa": 2.3,
         "is_patient_reported": true
       },
       "current_medications": [
-        {"medication_name": "nebivolol", "route": "Oral"},
-        {"medication_name": "olmesartan-amlodipin-hcthiazid", "route": "Oral"}
+        {
+          "medication_name": "nebivolol",
+          "route": "Oral"
+        },
+        {
+          "medication_name": "olmesartan-amlodipin-hcthiazid",
+          "route": "Oral"
+        }
       ],
       "diagnoses": [
-        {"icd10_code": "M25.511", "icd10_description": "Pain in right shoulder",
-         "diagnosis_text": "Pain in right shoulder", "is_primary": true, "source": "impression"},
-        {"icd10_code": null, "icd10_description": null,
-         "diagnosis_text": "Acromioclavicular Arthritis", "is_primary": false, "source": "impression"}
+        {
+          "icd10_code": "M25.511",
+          "icd10_description": "Pain in right shoulder",
+          "diagnosis_text": "Pain in right shoulder",
+          "is_primary": true,
+          "source": "impression"
+        },
+        {
+          "icd10_code": null,
+          "icd10_description": null,
+          "diagnosis_text": "Acromioclavicular Arthritis",
+          "is_primary": false,
+          "source": "impression"
+        }
       ],
       "prescriptions": [
-        {"drug_name": "meloxicam", "strength": "15", "strength_unit": "mg", "dose_form": "tablet",
-         "route": "PO",
-         "sig_text": "Take 1 po qd x 2 weeks then PRN- take with food - don't take with ibuprofen or naproxen",
-         "quantity": 30, "quantity_unit": "Tablet", "refills": 2, "action": "new"}
+        {
+          "drug_name": "meloxicam",
+          "strength": "15",
+          "strength_unit": "mg",
+          "dose_form": "tablet",
+          "route": "PO",
+          "sig_text": "Take 1 po qd x 2 weeks then PRN- take with food - don't take with ibuprofen or naproxen",
+          "quantity": 30,
+          "quantity_unit": "Tablet",
+          "refills": 2,
+          "action": "new"
+        }
       ],
       "imaging": [
-        {"modality": "XR", "body_part": "shoulder", "laterality": "right", "performed_date": "2025-07-23",
-         "interpretation_text": "The following film(s) were done in our facility: right axillary view, shoulder AP view, and scapular Y view. X-rays of the right shoulder were ordered and obtained, demonstrating the following findings: There is no fracture. Visual inspection of the shoulder joint reveals no glenohumeral joint space narrowing and decreased AC joint space. Soft tissue exam shows normal soft tissue.",
-         "impression": "No fracture; no glenohumeral joint space narrowing; decreased AC joint space."}
+        {
+          "modality": "XR",
+          "body_part": "shoulder",
+          "laterality": "right",
+          "performed_date": "2025-07-23",
+          "interpretation_text": "The following film(s) were done in our facility: right axillary view, shoulder AP view, and scapular Y view. X-rays of the right shoulder were ordered and obtained, demonstrating the following findings: There is no fracture. Visual inspection of the shoulder joint reveals no glenohumeral joint space narrowing and decreased AC joint space. Soft tissue exam shows normal soft tissue.",
+          "impression": "No fracture; no glenohumeral joint space narrowing; decreased AC joint space."
+        }
       ]
     },
     {
       "encounter_date": "2025-08-13",
-      "provider_name": "Marla Whitcomb", "provider_role": "NP", "is_primary_provider": true,
+      "provider_name": "Marla Whitcomb",
+      "provider_role": "NP",
+      "is_primary_provider": true,
       "chief_complaint": "F/U Shoulder Pain, Right evaluated on July 23, 2025",
       "hpi_text": "This is a 33 year old male who: is following up for Shoulder Pain. He was seen on July 23, 2025, at which time X-Ray Interpretation Shoulder was performed and he was prescribed Meloxicam 15 mg tablet (Take 1 po qd x 2 weeks then PRN- take with food - don't take with ibuprofen or naproxen). The patient presents for further evaluation and management. He returns today reporting that he is at least 50% better than he was when I saw him originally. He continues to have some lingering discomfort that he localizes to the AC joint. He says he has modified his workout some and is still taking the meloxicam.",
       "note_text": "I told him to consider completing a month of meloxicam. He has 1 week left, then will come off the medication. I told him it is okay to gradually increase his workouts and see how he tolerates it. I will see him again in 1 month to check his progress. If symptoms persist we might consider getting an MRI or trying an injection at that point.",
-      "signed_by": "Marla Whitcomb, NP", "signed_at": "2025-08-13T08:15:00",
+      "signed_by": "Marla Whitcomb, NP",
+      "signed_at": "2025-08-13T08:15:00",
       "follow_up_raw": "Follow up in 4 weeks",
-      "body_region": "shoulder", "laterality": "right", "visit_type": "follow_up",
+      "follow_up_days": 28,
+      "body_region": "shoulder",
+      "laterality": "right",
+      "visit_type": "follow_up",
       "vitals": null,
       "current_medications": [
-        {"medication_name": "nebivolol", "route": "Oral"},
-        {"medication_name": "olmesartan-amlodipin-hcthiazid", "route": "Oral"},
-        {"medication_name": "meloxicam", "route": "Oral"}
+        {
+          "medication_name": "nebivolol",
+          "route": "Oral"
+        },
+        {
+          "medication_name": "olmesartan-amlodipin-hcthiazid",
+          "route": "Oral"
+        },
+        {
+          "medication_name": "meloxicam",
+          "route": "Oral"
+        }
       ],
       "diagnoses": [
-        {"icd10_code": "M25.511", "icd10_description": "Pain in right shoulder",
-         "diagnosis_text": "Pain in right shoulder", "is_primary": true, "source": "impression"},
-        {"icd10_code": null, "icd10_description": null,
-         "diagnosis_text": "Acromioclavicular Arthritis", "is_primary": false, "source": "impression"}
+        {
+          "icd10_code": "M25.511",
+          "icd10_description": "Pain in right shoulder",
+          "diagnosis_text": "Pain in right shoulder",
+          "is_primary": true,
+          "source": "impression"
+        },
+        {
+          "icd10_code": null,
+          "icd10_description": null,
+          "diagnosis_text": "Acromioclavicular Arthritis",
+          "is_primary": false,
+          "source": "impression"
+        }
       ],
       "prescriptions": [
-        {"drug_name": "meloxicam", "strength": "15", "strength_unit": "mg", "dose_form": "tablet",
-         "route": "PO",
-         "sig_text": "Take 1 po qd x 2 weeks then PRN- take with food - don't take with ibuprofen or naproxen",
-         "quantity": 30, "quantity_unit": "Tablet", "refills": 2, "action": "modify"}
+        {
+          "drug_name": "meloxicam",
+          "strength": "15",
+          "strength_unit": "mg",
+          "dose_form": "tablet",
+          "route": "PO",
+          "sig_text": "Take 1 po qd x 2 weeks then PRN- take with food - don't take with ibuprofen or naproxen",
+          "quantity": 30,
+          "quantity_unit": "Tablet",
+          "refills": 2,
+          "action": "modify"
+        }
       ],
       "imaging": []
     }

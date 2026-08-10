@@ -24,6 +24,7 @@
       "exam_text": "Right wrist: tenderness over the first dorsal compartment at the radial styloid, positive Finkelstein test. No swelling of the MCP or PIP joints, full digit range of motion, sensation intact throughout.",
       "note_text": "Findings consistent with de Quervain tenosynovitis. Obtained wrist x-rays to rule out osseous pathology given point tenderness. Thumb spica splint recommended in addition to scheduled NSAIDs and activity modification. Will consider a corticosteroid injection if not improved at follow-up.",
       "follow_up_raw": "Follow up in 4 weeks",
+      "follow_up_days": 28,
       "signed_by": "Marla Whitcomb, NP",
       "signed_at": "2025-07-02T14:00:00",
       "body_region": "hand/wrist",

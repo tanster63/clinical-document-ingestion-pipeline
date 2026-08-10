@@ -4,107 +4,228 @@
   "location_name": "Cumberland Brentwood",
   "location_address": "4410 Maryland Farms, Brentwood TN 37027",
   "patient": {
-    "mrn": "5193064", "pms_id": "8830471",
-    "family_name": "GRISWOLD", "given_name": "ANNETTE", "preferred_name": "Annie Griswold",
-    "date_of_birth": "1968-04-02", "sex": "Female", "phone_home": "(615) 555-0148"
+    "mrn": "5193064",
+    "pms_id": "8830471",
+    "family_name": "GRISWOLD",
+    "given_name": "ANNETTE",
+    "preferred_name": "Annie Griswold",
+    "date_of_birth": "1968-04-02",
+    "sex": "Female",
+    "phone_home": "(615) 555-0148"
   },
   "encounters": [
     {
       "encounter_date": "2025-06-11",
-      "provider_name": "Dorian Vance", "provider_role": "MD", "is_primary_provider": true,
+      "provider_name": "Dorian Vance",
+      "provider_role": "MD",
+      "is_primary_provider": true,
       "chief_complaint": "Right knee pain, worse with stairs, 8 months.",
       "hpi_text": "Patient reports insidious onset right knee pain over eight months, medial-sided, worse descending stairs and after prolonged sitting. Denies locking or giving way. No injury. Has tried over-the-counter acetaminophen with partial relief.",
       "exam_text": "Right knee: mild effusion, medial joint line tenderness, ROM 5-125 degrees, ligamentously stable, no patellar apprehension.",
       "note_text": "Discussed osteoarthritis, activity modification, quadriceps strengthening. Start meloxicam. Home exercise program provided.",
       "follow_up_raw": "Follow up in 4 weeks",
-      "signed_by": "Dorian Vance, MD", "signed_at": "2025-06-11T17:42:00",
-      "body_region": "knee", "laterality": "right", "visit_type": "new",
+      "follow_up_days": 28,
+      "signed_by": "Dorian Vance, MD",
+      "signed_at": "2025-06-11T17:42:00",
+      "body_region": "knee",
+      "laterality": "right",
+      "visit_type": "new",
       "vitals": {
-        "taken_by": "K. Ruiz, MA", "taken_date": "2025-06-11",
-        "bp_systolic": 132, "bp_diastolic": 84, "pulse": 76, "respirations": 16,
-        "o2_sat": 98, "temperature_f": 98.2, "height_in": 64.0, "weight_lbs": 181.4,
-        "bmi": 31.1, "bsa": 1.9, "is_patient_reported": false
+        "taken_by": "K. Ruiz, MA",
+        "taken_date": "2025-06-11",
+        "bp_systolic": 132,
+        "bp_diastolic": 84,
+        "pulse": 76,
+        "respirations": 16,
+        "o2_sat": 98,
+        "temperature_f": 98.2,
+        "height_in": 64.0,
+        "weight_lbs": 181.4,
+        "bmi": 31.1,
+        "bsa": 1.9,
+        "is_patient_reported": false
       },
       "current_medications": [
-        {"medication_name": "lisinopril", "route": "Oral"},
-        {"medication_name": "atorvastatin", "route": "Oral"}
+        {
+          "medication_name": "lisinopril",
+          "route": "Oral"
+        },
+        {
+          "medication_name": "atorvastatin",
+          "route": "Oral"
+        }
       ],
       "diagnoses": [
-        {"icd10_code": "M17.11", "icd10_description": "Unilateral primary osteoarthritis, right knee",
-         "diagnosis_text": "Primary osteoarthritis of right knee", "is_primary": true, "source": "impression"}
+        {
+          "icd10_code": "M17.11",
+          "icd10_description": "Unilateral primary osteoarthritis, right knee",
+          "diagnosis_text": "Primary osteoarthritis of right knee",
+          "is_primary": true,
+          "source": "impression"
+        }
       ],
       "prescriptions": [
-        {"drug_name": "meloxicam", "strength": "15", "strength_unit": "mg", "dose_form": "tablet",
-         "route": "PO", "sig_text": "Take 1 po qd x 4 weeks with food", "quantity": 30,
-         "quantity_unit": "Tablet", "refills": 1, "action": "new"}
+        {
+          "drug_name": "meloxicam",
+          "strength": "15",
+          "strength_unit": "mg",
+          "dose_form": "tablet",
+          "route": "PO",
+          "sig_text": "Take 1 po qd x 4 weeks with food",
+          "quantity": 30,
+          "quantity_unit": "Tablet",
+          "refills": 1,
+          "action": "new"
+        }
       ],
       "imaging": [
-        {"modality": "XR", "body_part": "knee", "laterality": "right", "performed_date": "2025-06-11",
-         "interpretation_text": "Three views of the right knee. Medial compartment joint space narrowing with subchondral sclerosis and small marginal osteophytes. No acute fracture.",
-         "impression": "Moderate medial compartment osteoarthritis, right knee."}
+        {
+          "modality": "XR",
+          "body_part": "knee",
+          "laterality": "right",
+          "performed_date": "2025-06-11",
+          "interpretation_text": "Three views of the right knee. Medial compartment joint space narrowing with subchondral sclerosis and small marginal osteophytes. No acute fracture.",
+          "impression": "Moderate medial compartment osteoarthritis, right knee."
+        }
       ]
     },
     {
       "encounter_date": "2025-07-09",
-      "provider_name": "Dorian Vance", "provider_role": "MD", "is_primary_provider": true,
+      "provider_name": "Dorian Vance",
+      "provider_role": "MD",
+      "is_primary_provider": true,
       "chief_complaint": "Follow up right knee osteoarthritis.",
       "hpi_text": "Four weeks on meloxicam with roughly forty percent improvement. Stairs remain difficult. Tolerating medication without GI upset. Performing home exercises three times weekly.",
       "exam_text": "Right knee: effusion resolved, mild medial joint line tenderness, ROM 3-130 degrees.",
       "note_text": "Continue meloxicam, increase refills. Add formal physical therapy twice weekly for six weeks.",
       "follow_up_raw": "Follow up in 6 weeks",
-      "signed_by": "Dorian Vance, MD", "signed_at": "2025-07-09T16:05:00",
-      "body_region": "knee", "laterality": "right", "visit_type": "follow_up",
+      "follow_up_days": 42,
+      "signed_by": "Dorian Vance, MD",
+      "signed_at": "2025-07-09T16:05:00",
+      "body_region": "knee",
+      "laterality": "right",
+      "visit_type": "follow_up",
       "vitals": {
-        "taken_by": "K. Ruiz, MA", "taken_date": "2025-07-09",
-        "bp_systolic": 128, "bp_diastolic": 80, "pulse": 72, "respirations": 16,
-        "o2_sat": 99, "temperature_f": 98.0, "height_in": 64.0, "weight_lbs": 179.8,
-        "bmi": 30.9, "bsa": 1.9, "is_patient_reported": false
+        "taken_by": "K. Ruiz, MA",
+        "taken_date": "2025-07-09",
+        "bp_systolic": 128,
+        "bp_diastolic": 80,
+        "pulse": 72,
+        "respirations": 16,
+        "o2_sat": 99,
+        "temperature_f": 98.0,
+        "height_in": 64.0,
+        "weight_lbs": 179.8,
+        "bmi": 30.9,
+        "bsa": 1.9,
+        "is_patient_reported": false
       },
       "current_medications": [
-        {"medication_name": "lisinopril", "route": "Oral"},
-        {"medication_name": "atorvastatin", "route": "Oral"},
-        {"medication_name": "meloxicam", "route": "Oral"}
+        {
+          "medication_name": "lisinopril",
+          "route": "Oral"
+        },
+        {
+          "medication_name": "atorvastatin",
+          "route": "Oral"
+        },
+        {
+          "medication_name": "meloxicam",
+          "route": "Oral"
+        }
       ],
       "diagnoses": [
-        {"icd10_code": "M17.11", "icd10_description": "Unilateral primary osteoarthritis, right knee",
-         "diagnosis_text": "Primary osteoarthritis of right knee", "is_primary": true, "source": "impression"}
+        {
+          "icd10_code": "M17.11",
+          "icd10_description": "Unilateral primary osteoarthritis, right knee",
+          "diagnosis_text": "Primary osteoarthritis of right knee",
+          "is_primary": true,
+          "source": "impression"
+        }
       ],
       "prescriptions": [
-        {"drug_name": "meloxicam", "strength": "15", "strength_unit": "mg", "dose_form": "tablet",
-         "route": "PO", "sig_text": "Take 1 po qd with food", "quantity": 30,
-         "quantity_unit": "Tablet", "refills": 3, "action": "modify"}
+        {
+          "drug_name": "meloxicam",
+          "strength": "15",
+          "strength_unit": "mg",
+          "dose_form": "tablet",
+          "route": "PO",
+          "sig_text": "Take 1 po qd with food",
+          "quantity": 30,
+          "quantity_unit": "Tablet",
+          "refills": 3,
+          "action": "modify"
+        }
       ],
       "imaging": []
     },
     {
       "encounter_date": "2025-08-20",
-      "provider_name": "Dorian Vance", "provider_role": "MD", "is_primary_provider": true,
+      "provider_name": "Dorian Vance",
+      "provider_role": "MD",
+      "is_primary_provider": true,
       "chief_complaint": "Follow up right knee, post physical therapy.",
       "hpi_text": "Completed six weeks of physical therapy with continued improvement. Pain now intermittent and activity related. Wishes to reduce daily medication use.",
       "exam_text": "Right knee: no effusion, trace medial tenderness, ROM 0-135 degrees, strength 5/5.",
       "note_text": "Transition to as-needed acetaminophen. Continue independent home program. Return as needed or sooner if symptoms escalate.",
       "follow_up_raw": "Follow up in 3 months",
-      "signed_by": "Dorian Vance, MD", "signed_at": "2025-08-20T15:20:00",
-      "body_region": "knee", "laterality": "right", "visit_type": "follow_up",
+      "follow_up_days": 90,
+      "signed_by": "Dorian Vance, MD",
+      "signed_at": "2025-08-20T15:20:00",
+      "body_region": "knee",
+      "laterality": "right",
+      "visit_type": "follow_up",
       "vitals": {
-        "taken_by": "K. Ruiz, MA", "taken_date": "2025-08-20",
-        "bp_systolic": 126, "bp_diastolic": 78, "pulse": 70, "respirations": 16,
-        "o2_sat": 99, "temperature_f": 97.9, "height_in": 64.0, "weight_lbs": 177.2,
-        "bmi": 30.4, "bsa": 1.9, "is_patient_reported": false
+        "taken_by": "K. Ruiz, MA",
+        "taken_date": "2025-08-20",
+        "bp_systolic": 126,
+        "bp_diastolic": 78,
+        "pulse": 70,
+        "respirations": 16,
+        "o2_sat": 99,
+        "temperature_f": 97.9,
+        "height_in": 64.0,
+        "weight_lbs": 177.2,
+        "bmi": 30.4,
+        "bsa": 1.9,
+        "is_patient_reported": false
       },
       "current_medications": [
-        {"medication_name": "lisinopril", "route": "Oral"},
-        {"medication_name": "atorvastatin", "route": "Oral"},
-        {"medication_name": "meloxicam", "route": "Oral"}
+        {
+          "medication_name": "lisinopril",
+          "route": "Oral"
+        },
+        {
+          "medication_name": "atorvastatin",
+          "route": "Oral"
+        },
+        {
+          "medication_name": "meloxicam",
+          "route": "Oral"
+        }
       ],
       "diagnoses": [
-        {"icd10_code": "M17.11", "icd10_description": "Unilateral primary osteoarthritis, right knee",
-         "diagnosis_text": "Primary osteoarthritis of right knee", "is_primary": true, "source": "impression"}
+        {
+          "icd10_code": "M17.11",
+          "icd10_description": "Unilateral primary osteoarthritis, right knee",
+          "diagnosis_text": "Primary osteoarthritis of right knee",
+          "is_primary": true,
+          "source": "impression"
+        }
       ],
       "prescriptions": [
-        {"drug_name": "acetaminophen", "strength": "650", "strength_unit": "mg", "dose_form": "tablet",
-         "route": "PO", "sig_text": "Take 1 po q8h PRN pain", "quantity": 90,
-         "quantity_unit": "Tablet", "refills": 2, "action": "new"}
+        {
+          "drug_name": "acetaminophen",
+          "strength": "650",
+          "strength_unit": "mg",
+          "dose_form": "tablet",
+          "route": "PO",
+          "sig_text": "Take 1 po q8h PRN pain",
+          "quantity": 90,
+          "quantity_unit": "Tablet",
+          "refills": 2,
+          "action": "new"
+        }
       ],
       "imaging": []
     }

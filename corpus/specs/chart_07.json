@@ -24,6 +24,7 @@
       "exam_text": "Cervical spine: decreased range of motion in extension and right rotation with pain. Positive Spurling test on the right reproducing arm symptoms. Biceps strength 4/5 on the right, sensation diminished over the right thumb and index finger. Reflexes symmetric.",
       "note_text": "Findings consistent with right C6 cervical radiculopathy. Ordered a cervical MRI without contrast given the neurologic findings. Prescribed a short oral prednisone taper and cyclobenzaprine for muscle spasm while awaiting imaging. Discussed activity modification and cervical traction.",
       "follow_up_raw": "Follow up in 3 weeks",
+      "follow_up_days": 21,
       "signed_by": "Yusuf Halloran, DO",
       "signed_at": "2025-08-01T13:00:00",
       "body_region": "cervical spine",

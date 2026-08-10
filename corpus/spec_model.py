@@ -70,6 +70,11 @@ class EncounterSpec(BaseModel):
     note_text: str | None = None
     operative_note: str | None = None
     follow_up_raw: str | None = None
+    # Ground truth only — never rendered. The chart prints prose; this is the
+    # interval the author meant by it, so eval/accuracy.py scores the
+    # normalizer against a declared answer rather than against its own output.
+    # Left None where the phrasing is deliberately vague, and then unscored.
+    follow_up_days: int | None = None
     signed_by: str | None = None
     signed_at: datetime | None = None
     vitals: VitalsSpec | None = None
