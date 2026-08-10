@@ -87,8 +87,8 @@ def test_medication_snapshot_carries_no_patient_level_validity():
     """Its grain is (encounter x medication): it is only true as of that visit."""
     m = MedicationSnapshot(encounter_id="e1", patient_id="p1", medication_name="nebivolol")
     assert set(m.to_row()) == {
-        "encounter_id", "patient_id", "medication_name", "route",
-        "source_document_id", "source_page",
+        "encounter_id", "patient_id", "medication_name", "strength",
+        "strength_unit", "dose_form", "route", "source_document_id", "source_page",
     }
 
 

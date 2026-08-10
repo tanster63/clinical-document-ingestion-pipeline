@@ -11,7 +11,15 @@
     "preferred_name": "Trey Barlow",
     "date_of_birth": "1991-09-15",
     "sex": "Male",
-    "phone_home": "(615) 555-0173"
+    "phone_home": "(615) 555-0173",
+    "history": {
+      "medical": [
+        "Essential hypertension"
+      ],
+      "social": [
+        "Smoking status - Unspecified"
+      ]
+    }
   },
   "encounters": [
     {

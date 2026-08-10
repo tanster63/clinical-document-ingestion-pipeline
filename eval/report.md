@@ -14,7 +14,7 @@ chart. Regenerate after any parser change.
 
 ## Synthetic corpus (7 charts, 13 encounters)
 
-### Synthetic corpus — Deterministic parsing — 100.0% (547/547)
+### Synthetic corpus — Deterministic parsing — 100.0% (584/584)
 
 | Field | Correct | Total | Accuracy |
 | --- | ---: | ---: | ---: |
@@ -29,13 +29,15 @@ chart. Regenerate after any parser change.
 | `encounter.provider_role` | 13 | 13 | 100.0% |
 | `encounter.signed_at` | 13 | 13 | 100.0% |
 | `encounter.signed_by` | 13 | 13 | 100.0% |
+| `history.count` | 7 | 7 | 100.0% |
+| `history.item` | 26 | 26 | 100.0% |
 | `imaging.count` | 13 | 13 | 100.0% |
 | `imaging.laterality` | 7 | 7 | 100.0% |
 | `imaging.modality` | 7 | 7 | 100.0% |
 | `imaging.performed_date` | 7 | 7 | 100.0% |
 | `medication.count` | 13 | 13 | 100.0% |
-| `medication.medication_name` | 28 | 28 | 100.0% |
-| `medication.route` | 28 | 28 | 100.0% |
+| `medication.medication_name` | 29 | 29 | 100.0% |
+| `medication.route` | 29 | 29 | 100.0% |
 | `patient.date_of_birth` | 7 | 7 | 100.0% |
 | `patient.family_name` | 7 | 7 | 100.0% |
 | `patient.given_name` | 7 | 7 | 100.0% |
@@ -52,6 +54,8 @@ chart. Regenerate after any parser change.
 | `prescription.sig_text` | 14 | 14 | 100.0% |
 | `prescription.strength` | 14 | 14 | 100.0% |
 | `prescription.strength_unit` | 14 | 14 | 100.0% |
+| `procedure.performed_date` | 1 | 1 | 100.0% |
+| `procedure.procedure_name` | 1 | 1 | 100.0% |
 | `vitals.absent` | 1 | 1 | 100.0% |
 | `vitals.bmi` | 12 | 12 | 100.0% |
 | `vitals.bp_diastolic` | 12 | 12 | 100.0% |
@@ -70,7 +74,7 @@ The one chart here whose layout this project did not author, scored by
 the same harness against a hand-labelled truth file. It is the honest
 number, and it is a mandatory test in the suite.
 
-### Provided chart — Deterministic parsing — 89.9% (71/79)
+### Provided chart — Deterministic parsing — 90.2% (74/82)
 
 | Field | Correct | Total | Accuracy |
 | --- | ---: | ---: | ---: |
@@ -85,6 +89,8 @@ number, and it is a mandatory test in the suite.
 | `encounter.provider_role` | 2 | 2 | 100.0% |
 | `encounter.signed_at` | 2 | 2 | 100.0% |
 | `encounter.signed_by` | 2 | 2 | 100.0% |
+| `history.count` | 1 | 1 | 100.0% |
+| `history.item` | 2 | 2 | 100.0% |
 | `imaging.count` | 2 | 2 | 100.0% |
 | `imaging.laterality` | 1 | 1 | 100.0% |
 | `imaging.modality` | 1 | 1 | 100.0% |

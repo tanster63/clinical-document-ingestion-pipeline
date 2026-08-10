@@ -34,6 +34,8 @@ MODEL_FOR_TABLE = {
     "diagnoses": models.Diagnosis,
     "prescriptions": models.Prescription,
     "medication_snapshots": models.MedicationSnapshot,
+    "patient_history": models.PatientHistory,
+    "procedures": models.Procedure,
     "imaging_studies": models.ImagingStudy,
     "exam_findings": models.ExamFinding,
     "ingestion_issues": models.IngestionIssue,

@@ -1,8 +1,8 @@
 from datetime import date
 
 from ingestion.keys import (
-    diagnosis_key, document_key, encounter_key, imaging_key, issue_key,
-    patient_key, prescription_key, sha256_key,
+    diagnosis_key, document_key, encounter_key, history_key, imaging_key,
+    issue_key, patient_key, prescription_key, procedure_key, sha256_key,
 )
 
 
@@ -57,10 +57,27 @@ def test_child_keys_separate_on_their_business_identity():
         imaging_key("e1", "MRI", "shoulder", date(2025, 7, 23))
 
 
-def test_issue_keys_do_not_accumulate_across_runs():
-    """An issue row is keyed on the document and the gap, not on the run that
-    found it, so re-ingesting updates one row instead of adding another."""
-    assert issue_key("d1", 0, "missing_section", "vitals") == \
-        issue_key("d1", 0, "missing_section", "vitals")
-    assert issue_key("d1", 0, "missing_section", "vitals") != \
-        issue_key("d1", 1, "missing_section", "vitals")
+def test_issue_keys_do_not_accumulate_across_runs_or_re_exports():
+    """An issue row is keyed on the gap — patient, visit, type, field — not on
+    the run or the file that revealed it. Keying on the document would make a
+    corrected re-export report every one of its predecessor's gaps again, and
+    `document_id` is the file's content hash, so a re-export is a new document."""
+    gap = ("4820917", date(2025, 8, 13), "missing_section", "vitals")
+    assert issue_key(*gap) == issue_key(*gap)
+    assert issue_key(*gap) != issue_key("4820917", date(2025, 7, 23),
+                                        "missing_section", "vitals")
+    assert issue_key(*gap) != issue_key("4820917", date(2025, 8, 13),
+                                        "missing_section", "imaging")
+
+
+def test_history_is_keyed_at_patient_grain():
+    """The rail reprints the same history at every visit; one fact, one row."""
+    assert history_key("4820917", "medical", "Essential hypertension") == \
+        history_key("4820917", "medical", "essential  hypertension")
+    assert history_key("4820917", "medical", "Essential hypertension") != \
+        history_key("4820918", "medical", "Essential hypertension")
+
+
+def test_a_procedure_is_keyed_on_what_was_done_and_when():
+    assert procedure_key("e1", "Left L5-S1 microdiscectomy", date(2025, 7, 2)) != \
+        procedure_key("e1", "Left L5-S1 microdiscectomy", date(2025, 7, 9))

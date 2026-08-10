@@ -24,12 +24,19 @@ from datetime import date
 from pathlib import Path
 
 from corpus.spec_model import ChartSpec, load_spec
-from ingestion.config import Config, load_config
+from ingestion.config import Config
 from ingestion.extract.pipeline import extract_document
 from ingestion.models import ExtractedDocument
 
 DETERMINISTIC = "deterministic"
 LLM = "llm"
+
+# Scoring reads PDFs off disk and never touches Google Cloud, so it carries its
+# own configuration rather than requiring a .env just to print a number.
+LOCAL_CONFIG = Config(
+    project_id="local", dataset="cumberland", bucket="local",
+    location="local", gemini_model="(not called)", pipeline_version="local",
+)
 
 # The corpus records a region the way a clinician writes it; the classifier
 # picks from a fixed vocabulary that splits some of those in two. Both name the
@@ -128,6 +135,26 @@ def compare_document(extracted: ExtractedDocument, truth: ChartSpec,
 
     board.check("encounter.count", len(truth.encounters), len(extracted.encounters))
 
+    # The left rail's longitudinal context, at patient grain (§5.1).
+    expected_history = {
+        (history_type, item)
+        for history_type, items in (
+            ("medical", patient.history.medical),
+            ("musculoskeletal", patient.history.musculoskeletal),
+            ("family", patient.history.musculoskeletal_family),
+            ("musculoskeletal_surgery", patient.history.musculoskeletal_surgery),
+            ("surgical", patient.history.surgical),
+            ("social", patient.history.social),
+        )
+        for item in items
+    }
+    got_history = {(h.history_type, h.item_text) for h in extracted.history}
+    for history_type, item in sorted(expected_history):
+        board.check("history.item", item,
+                    item if (history_type, item) in got_history else None,
+                    context=f"[{history_type}] ")
+    board.check("history.count", len(expected_history), len(got_history))
+
     by_date = {e.encounter_date: e for e in extracted.encounters}
     for spec in truth.encounters:
         found = by_date.get(spec.encounter_date)
@@ -211,6 +238,14 @@ def compare_document(extracted: ExtractedDocument, truth: ChartSpec,
             # A chart with no vitals section must produce no vitals row. Absence
             # is a fact the warehouse has to get right too.
             board.check("vitals.absent", True, got_vitals is None, context=prefix)
+
+        if spec.procedure_name:
+            got = next((p for p in extracted.procedures if p.encounter_id == eid), None)
+            board.check("procedure.procedure_name", spec.procedure_name,
+                        got.procedure_name if got else None, context=prefix)
+            board.check("procedure.performed_date",
+                        spec.procedure_date or spec.encounter_date,
+                        got.performed_date if got else None, context=prefix)
 
         got_imaging = [i for i in extracted.imaging if i.encounter_id == eid]
         for study in spec.imaging:
@@ -399,7 +434,7 @@ def main() -> None:
     import os
     import sys
 
-    cfg = load_config()
+    cfg = LOCAL_CONFIG
     include_llm = "--llm" in sys.argv
     sample_path = os.environ.get(
         "SAMPLE_CHART_PATH",
