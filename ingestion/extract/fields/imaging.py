@@ -20,7 +20,7 @@ genuinely distinct studies — an XR and an MRI of the same region — separate.
 """
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date
 
 from ingestion.extract.layout import Block, lines_of
@@ -114,15 +114,22 @@ def _laterality(head: str, lead: str, segment: str, body_part: str | None) -> st
     return None
 
 
-def _performed(segment: str, fallback: date | None) -> date | None:
+def _performed(segment: str) -> date | None:
+    """The date printed for this segment, or None.
+
+    The encounter date is deliberately *not* substituted here. A study written
+    across several paragraphs prints its date in only one of them, and filling
+    the others in first would make the merge keep an encounter date it should
+    have discarded in favour of the real one.
+    """
     match = PERFORMED_RE.search(segment)
     if not match:
-        return fallback
+        return None
     month, day, year = (int(g) for g in match.groups())
     try:
         return date(year, month, day)
     except ValueError:
-        return fallback
+        return None
 
 
 def _merge(into: ImagingFact, extra: ImagingFact) -> ImagingFact:
@@ -171,15 +178,35 @@ def parse_imaging(blocks: list[Block], encounter_date: date | None) -> list[Imag
             modality=modality,
             body_part=body_part,
             laterality=_laterality(head, lead, segment, body_part),
-            performed_date=_performed(segment, encounter_date),
+            performed_date=_performed(segment),
             interpretation_text=body or None,
             impression=impression,
             source_page=lines[start].page,
         )
-        if facts and facts[-1].modality == candidate.modality and (
-            candidate.body_part is None or facts[-1].body_part == candidate.body_part
-        ):
+        if facts and _same_study(facts[-1], candidate):
             facts[-1] = _merge(facts[-1], candidate)
             continue
         facts.append(candidate)
-    return facts
+
+    # The encounter date stands in only where the report never printed one, and
+    # only once every paragraph of a study has been folded together.
+    return [
+        fact if fact.performed_date else replace(fact, performed_date=encounter_date)
+        for fact in facts
+    ]
+
+
+def _same_study(previous: ImagingFact, candidate: ImagingFact) -> bool:
+    """Whether two segments describe the same study.
+
+    Region names are compared by containment, not equality: the paragraphs of
+    one report name it at different lengths — "pelvis and right hip" in the
+    heading, then just "hip" in the findings — and treating those as two studies
+    double-counts a single film.
+    """
+    if previous.modality != candidate.modality:
+        return False
+    if candidate.body_part is None or previous.body_part is None:
+        return True
+    return (candidate.body_part in previous.body_part
+            or previous.body_part in candidate.body_part)

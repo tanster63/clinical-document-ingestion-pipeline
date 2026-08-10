@@ -63,13 +63,16 @@ HEADING_ALIASES: dict[str, str] = {
     "clinic": "location",
     "medical history": "medical_history",
     "surgical history": "surgical_history",
-    "musculoskeletal surgery": "surgical_history",
+    "musculoskeletal surgery": "musculoskeletal_surgery",
     "social history": "social_history",
     "family history": "family_history",
     "musculoskeletal family history": "family_history",
-    "musculoskeletal history": "other_history",
-    "musculoskeletal": "other_history",
-    "history": "other_history",
+    "musculoskeletal history": "musculoskeletal_history",
+    "musculoskeletal family": "family_history",
+    # The provided chart wraps "Musculoskeletal" and "History" onto separate
+    # lines, so each half has to be recognised on its own.
+    "musculoskeletal": "musculoskeletal_history",
+    "history": "musculoskeletal_history",
 }
 
 # Labels permitted to split a line and keep the remainder as content. Kept
@@ -123,7 +126,26 @@ def find_sections(blocks: list[Block]) -> dict[str, list[Block]]:
     """
     sections: dict[str, list[Block]] = {}
     current = PREAMBLE
-    for block in reading_order(blocks):
+    ordered = reading_order(blocks)
+    index = 0
+    while index < len(ordered):
+        block = ordered[index]
+
+        # A narrow rail wraps a long heading across two lines, and where it
+        # breaks depends on the column width: the provided chart splits
+        # "Musculoskeletal / Family History", a wider rail splits
+        # "Musculoskeletal Family / History". Either way the two halves name one
+        # section, and reading them separately files the content under whichever
+        # half came last.
+        if index + 1 < len(ordered):
+            joined = f"{block.text.strip()} {ordered[index + 1].text.strip()}"
+            joined_key = normalize_heading(joined)
+            if joined_key:
+                current = joined_key
+                sections.setdefault(current, [])
+                index += 2
+                continue
+
         key, remainder = split_heading(block.text)
         if key:
             current = key
@@ -133,8 +155,10 @@ def find_sections(blocks: list[Block]) -> dict[str, list[Block]]:
                     Block(text=remainder, x0=block.x0, y0=block.y0,
                           x1=block.x1, y1=block.y1, page=block.page)
                 )
+            index += 1
             continue
         sections.setdefault(current, []).append(block)
+        index += 1
     return sections
 
 

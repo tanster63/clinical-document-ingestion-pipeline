@@ -1,6 +1,6 @@
 """Diagnoses from the assessment section.
 
-`body_region` and `laterality` here are deterministic (§4.2): resolved from the
+`body_region` and `laterality` here are deterministic: resolved from the
 ICD-10 code where the code encodes them, otherwise left NULL for the pipeline to
 inherit from the encounter. The LLM never touches these columns.
 

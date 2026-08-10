@@ -4,7 +4,7 @@ This is the only module that knows the order of operations. Each parser stays
 ignorant of the others, and every section is guarded independently, so a chart
 that is missing its imaging block still lands its patient, encounters,
 diagnoses and prescriptions — with the gap recorded as a queryable row rather
-than a log line nobody reads (§6.4).
+than a log line nobody reads.
 """
 
 import re
@@ -19,22 +19,27 @@ from ingestion.extract.encounters import split_encounters
 from ingestion.extract.fields.diagnoses import parse_diagnoses
 from ingestion.extract.fields.exam import parse_exam_findings
 from ingestion.extract.fields.followup import parse_follow_up
+from ingestion.extract.fields.history import parse_history
 from ingestion.extract.fields.identifiers import parse_filename_ids, parse_identity
 from ingestion.extract.fields.imaging import parse_imaging
 from ingestion.extract.fields.medications import parse_medications
 from ingestion.extract.fields.prescriptions import parse_prescriptions
+from ingestion.extract.fields.procedures import parse_procedures
 from ingestion.extract.fields.vitals import parse_vitals
-from ingestion.extract.layout import PageLayout, load_pages, text_of
+from ingestion.extract.layout import PageLayout, load_pages, reading_order, text_of
 from ingestion.extract.llm import EMPTY_PROSE_FACTS, classify_encounter
-from ingestion.extract.sections import find_sections, section_blocks, section_text
+from ingestion.extract.sections import (
+    find_sections, normalize_heading, section_blocks, section_text,
+)
 from ingestion.issues import IssueDraft, error, warn
 from ingestion.keys import (
-    diagnosis_key, document_key, encounter_key, exam_finding_key, imaging_key,
-    issue_key, patient_key, prescription_key,
+    diagnosis_key, document_key, encounter_key, exam_finding_key, history_key,
+    imaging_key, issue_key, patient_key, prescription_key, procedure_key,
 )
 from ingestion.models import (
     Diagnosis, Document, Encounter, ExamFinding, ExtractedDocument, ImagingStudy,
-    IngestionIssue, MedicationSnapshot, Patient, Prescription, Vitals,
+    IngestionIssue, MedicationSnapshot, Patient, PatientHistory, Prescription,
+    Procedure, Vitals,
 )
 
 PROVIDER_RE = re.compile(
@@ -95,22 +100,68 @@ def _signature_of(text: str) -> tuple[str | None, datetime | None]:
     return who, when
 
 
+def _footer_lines(pages: list[PageLayout]) -> list[str]:
+    """Text in the bottom band that every page of the visit repeats.
+
+    "Near the bottom of the page" is not enough on its own: a long exam runs
+    into that band and its sub-headings get mistaken for the clinic's name. What
+    actually distinguishes a footer is that it repeats — so the band is
+    intersected across pages, and the page number, which differs, drops out with
+    the body text.
+    """
+    bands = []
+    for page in pages:
+        floor = FOOTER_BAND_FRACTION * page.height
+        bands.append([b.text.strip() for b in reading_order(page.body + page.sidebar)
+                      if b.y0 >= floor and b.text.strip()])
+    if not bands:
+        return []
+    repeated = set(bands[0]).intersection(*(set(band) for band in bands[1:]))
+    return [text for text in bands[0] if text in repeated]
+
+
 def _location_of(pages: list[PageLayout], sidebar_sections: dict) -> str | None:
-    """The clinic site: from the sidebar where the chart has one, otherwise the
-    footer band, where the provided export prints it."""
+    """The clinic site: from the sidebar where a chart carries one, otherwise
+    from the footer, which is where the source EMR prints it."""
     from_sidebar = _clean_prose(section_text(sidebar_sections, "location"))
     if from_sidebar:
         return from_sidebar
-    for page in pages:
-        floor = FOOTER_BAND_FRACTION * page.height
-        for block in page.body + page.sidebar:
-            text = block.text.strip()
-            if block.y0 < floor or not text:
-                continue
-            if any(char.isdigit() for char in text) or PROVIDER_RE.search(text):
-                continue
-            return text
+    for text in _footer_lines(pages):
+        if any(char.isdigit() for char in text):
+            continue           # phone numbers, street addresses, page counters
+        if PROVIDER_RE.search(text):
+            continue           # the rendering provider's own line
+        if text.endswith(":") or normalize_heading(text):
+            continue           # a section label that reached the bottom band
+        return text
     return None
+
+
+def _unreadable(pdf_bytes: bytes, file_name: str, cfg: Config, doc_id: str,
+                file_mrn: str | None, file_pms: str | None, gcs_uri: str | None,
+                run_id: str, exc: Exception) -> ExtractedDocument:
+    """What a file that will not open still produces: provenance and a reason."""
+    return ExtractedDocument(
+        document=Document(
+            document_id=doc_id,
+            gcs_uri=gcs_uri or f"file://{file_name}",
+            file_name=file_name,
+            file_bytes=len(pdf_bytes),
+            page_count=0,
+            mrn_from_filename=file_mrn,
+            pms_id_from_filename=file_pms,
+            ingest_run_id=run_id,
+            pipeline_version=cfg.pipeline_version,
+            parse_status="failed",
+        ),
+        patient=None,
+        issues=[IngestionIssue(
+            issue_id=issue_key(doc_id, None, "unreadable_document", "document"),
+            document_id=doc_id, severity="error", issue_type="unreadable_document",
+            field_name="document", ingest_run_id=run_id,
+            detail=f"{type(exc).__name__}: {exc}",
+        )],
+    )
 
 
 def extract_document(
@@ -124,10 +175,18 @@ def extract_document(
 ) -> ExtractedDocument:
     run_id = run_id or str(uuid.uuid4())
     drafts: list[IssueDraft] = []
-
-    pages = load_pages(pdf_bytes)
     doc_id = document_key(pdf_bytes)
     file_mrn, file_pms = parse_filename_ids(file_name)
+
+    try:
+        pages = load_pages(pdf_bytes)
+    except Exception as exc:
+        # An unreadable file is a documented outcome, not a crash: the brief
+        # requires the job to record the gap rather than fail. It lands a
+        # document row with parse_status='failed' and an error issue, and
+        # nothing else, because there is nothing else to read.
+        return _unreadable(pdf_bytes, file_name, cfg, doc_id, file_mrn, file_pms,
+                           gcs_uri, run_id, exc)
 
     identity, identity_drafts = parse_identity(pages[0].header if pages else [], file_name)
     drafts.extend(identity_drafts)
@@ -135,7 +194,7 @@ def extract_document(
         drafts.append(error("unparsed_field",
                             "no MRN in the header band or the filename",
                             field_name="mrn"))
-    patient_id = patient_key(identity.mrn or f"UNKNOWN-{doc_id[:12]}")
+    patient_id = patient_key(identity.mrn) if identity.mrn else None
 
     encounters: list[Encounter] = []
     vitals: list[Vitals] = []
@@ -144,6 +203,9 @@ def extract_document(
     medications: list[MedicationSnapshot] = []
     imaging: list[ImagingStudy] = []
     exam_findings: list[ExamFinding] = []
+    history: list[PatientHistory] = []
+    procedures: list[Procedure] = []
+    seen_history: set[str] = set()
     encounter_ids: dict[date, str] = {}
 
     groups = split_encounters(pages, date_of_birth=identity.date_of_birth)
@@ -278,7 +340,7 @@ def extract_document(
             # The plan records a prescribing action but prints no drug, dose or
             # quantity to go with it. Inferring those from a previous visit
             # would put invented dosing in the warehouse, so the gap is
-            # recorded instead and stays queryable (§6.4).
+            # recorded instead and stays queryable.
             drafts.append(warn(
                 "unparsed_field",
                 "the plan records a prescribing action but prints no drug, sig, "
@@ -299,10 +361,36 @@ def extract_document(
                 "source_page": fact.source_page,
             })
 
+        # Patient-level, so it is collected once across the document rather than
+        # once per encounter, however many times the rail reprints it.
+        for fact in parse_history(sidebar_blocks):
+            key = history_key(patient_id, fact.history_type, fact.item_text)
+            if key in seen_history:
+                continue
+            seen_history.add(key)
+            keep(PatientHistory, "patient_history", history, {
+                "history_id": key, "patient_id": patient_id,
+                "history_type": fact.history_type, "item_text": fact.item_text,
+                "source_document_id": doc_id, "source_page": fact.source_page,
+            })
+
         for fact in parse_medications(sidebar_blocks):
             keep(MedicationSnapshot, "medication", medications, {
                 **common,
-                "medication_name": fact.medication_name, "route": fact.route,
+                "medication_name": fact.medication_name,
+                "strength": fact.strength, "strength_unit": fact.strength_unit,
+                "dose_form": fact.dose_form, "route": fact.route,
+                "source_page": fact.source_page,
+            })
+
+        for fact in parse_procedures(sections.get("operative_note", []), encounter_date):
+            keep(Procedure, "procedure", procedures, {
+                **common,
+                "procedure_id": procedure_key(encounter_id, fact.procedure_name,
+                                              fact.performed_date),
+                "procedure_name": fact.procedure_name, "body_part": fact.body_part,
+                "laterality": fact.laterality, "performed_date": fact.performed_date,
+                "surgeon_name": fact.surgeon_name, "note_text": fact.note_text,
                 "source_page": fact.source_page,
             })
 
@@ -321,8 +409,8 @@ def extract_document(
             keep(ExamFinding, "exam_finding", exam_findings, {
                 **common,
                 "finding_id": exam_finding_key(encounter_id, fact.body_part,
-                                               fact.finding_type, fact.measure_name,
-                                               ordinal),
+                                               fact.laterality, fact.finding_type,
+                                               fact.measure_name, ordinal),
                 "body_part": fact.body_part, "laterality": fact.laterality,
                 "finding_type": fact.finding_type, "measure_name": fact.measure_name,
                 "value_numeric": fact.value_numeric, "value_text": fact.value_text,
@@ -330,9 +418,9 @@ def extract_document(
             })
 
     seen = sorted(e.encounter_date for e in encounters)
-    patient = Patient(
+    patient = None if not patient_id else Patient(
         patient_id=patient_id,
-        mrn=identity.mrn or f"UNKNOWN-{doc_id[:12]}",
+        mrn=identity.mrn,
         pms_id=identity.pms_id,
         legal_name=identity.legal_name,
         family_name=identity.family_name,
@@ -348,7 +436,8 @@ def extract_document(
 
     issues = [
         IngestionIssue(
-            issue_id=issue_key(doc_id, ordinal, draft.issue_type, draft.field_name),
+            issue_id=issue_key(patient_id or doc_id, draft.encounter_date,
+                               draft.issue_type, draft.field_name),
             document_id=doc_id,
             encounter_id=encounter_ids.get(draft.encounter_date),
             severity=draft.severity, issue_type=draft.issue_type,
@@ -380,5 +469,6 @@ def extract_document(
     return ExtractedDocument(
         document=document, patient=patient, encounters=encounters, vitals=vitals,
         diagnoses=diagnoses, prescriptions=prescriptions, medications=medications,
-        imaging=imaging, exam_findings=exam_findings, issues=issues,
+        history=history, procedures=procedures, imaging=imaging,
+        exam_findings=exam_findings, issues=issues,
     )

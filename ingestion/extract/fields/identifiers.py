@@ -15,7 +15,7 @@ beneath it that overlaps it horizontally reads the right cell every time.
 
 The filename also encodes MRN and PMS ID. A disagreement between the two is a
 real signal about the source system, so it is recorded rather than silently
-resolved (§6.2). The header wins, because it is what a human reads on the page.
+resolved. The header wins, because it is what a human reads on the page.
 """
 
 import re

@@ -7,7 +7,7 @@ works whether the prescription sits under its own heading (rendered corpus) or
 inline under "Plan: Prescription." (provided export).
 
 Nothing here is inferred. A hallucinated refill count or sig is unacceptable in
-a clinical record, so every field is read from the page or left NULL (§6.3).
+a clinical record, so every field is read from the page or left NULL.
 """
 
 import re
