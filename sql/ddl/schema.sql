@@ -148,7 +148,7 @@ CREATE TABLE IF NOT EXISTS `${PROJECT}.${DATASET}.exam_findings` (
   patient_id STRING NOT NULL,
   body_part STRING,
   laterality STRING,
-  finding_type STRING OPTIONS(description="rom_active|rom_passive|strength|special_test|inspection|skin|stability"),
+  finding_type STRING OPTIONS(description="rom_active|rom_passive|strength|special_test|inspection|skin|stability|narrative"),
   measure_name STRING,
   value_numeric FLOAT64,
   value_text STRING,
@@ -168,6 +168,25 @@ CREATE TABLE IF NOT EXISTS `${PROJECT}.${DATASET}.ingestion_issues` (
   created_at TIMESTAMP,
   ingest_run_id STRING
 ) OPTIONS(description="Queryable record of every gap. A missing section lands here, not in a log.");
+
+-- Run-level audit. Added during implementation: a download that fails never
+-- produces a `documents` row, so without this table the most interesting
+-- failure in the pipeline would be invisible to SQL. Every invocation of the
+-- service lands here, successful or not.
+CREATE TABLE IF NOT EXISTS `${PROJECT}.${DATASET}.ingest_runs` (
+  run_id STRING NOT NULL,
+  document_id STRING OPTIONS(description="null when the file never parsed"),
+  gcs_uri STRING,
+  trigger_source STRING OPTIONS(description="eventarc | manual | backfill"),
+  status STRING OPTIONS(description="succeeded | partial | failed"),
+  started_at TIMESTAMP NOT NULL,
+  finished_at TIMESTAMP,
+  encounters_written INT64,
+  issues_warn INT64,
+  issues_error INT64,
+  pipeline_version STRING,
+  error_detail STRING
+) OPTIONS(description="One row per ingest attempt. The audit trail for both trigger paths.");
 
 CREATE TABLE IF NOT EXISTS `${PROJECT}.${DATASET}.ref_drug_class` (
   drug_name STRING NOT NULL,
