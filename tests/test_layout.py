@@ -1,5 +1,4 @@
 import fitz
-import pytest
 
 from ingestion.extract.layout import (
     Block, load_pages, page_label_of, reading_order, split_regions, text_of,
@@ -69,8 +68,8 @@ def test_load_pages_keeps_every_block(sample_pdf_bytes):
     pages = load_pages(sample_pdf_bytes)
     with fitz.open(stream=sample_pdf_bytes, filetype="pdf") as doc:
         for page, layout in zip(doc, pages):
-            raw = len([l for b in page.get_text("dict")["blocks"]
-                       if b.get("type") == 0 for l in b["lines"]])
+            raw = len([line for b in page.get_text("dict")["blocks"]
+                       if b.get("type") == 0 for line in b["lines"]])
             assert len(layout.header) + len(layout.sidebar) + len(layout.body) == raw
 
 

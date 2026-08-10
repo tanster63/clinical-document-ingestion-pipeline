@@ -39,6 +39,18 @@ MIN_STRUCTURAL_RUN_HEIGHT = ROW_TOLERANCE * 12
 # run's own height, so it scales with font size rather than being a fixed
 # pixel amount.
 SINGLE_ROW_GAP_MULTIPLE = 2.0
+# An x-band still counts as a gutter while at most this fraction of the page's
+# text rows cross it. A footer rule crosses the gutter on every page that has
+# one; a column of text occupies a large share of the rows. Counting rows
+# rather than testing "did anything touch this band" is what tells those two
+# apart, and expressing the tolerance as a fraction keeps it independent of
+# page size, font size, and how much text the page happens to carry.
+GUTTER_MAX_ROW_FRACTION = 0.05
+# A sidebar is a rail: materially narrower than the column beside it, both
+# measured from the gutter outwards. Two columns of comparable width are a body
+# table — the provided chart prints its right/left exam findings that way — and
+# must stay in body together, or half of every exam lands in the medication rail.
+SIDEBAR_MAX_WIDTH_RATIO = 0.5
 
 
 @dataclass(frozen=True)
@@ -65,7 +77,44 @@ class PageLayout:
 
 
 def reading_order(blocks: list[Block]) -> list[Block]:
-    return sorted(blocks, key=lambda b: (round(b.y0 / ROW_TOLERANCE), b.x0))
+    """Page, then row, then column.
+
+    The page term matters as soon as blocks from more than one page are
+    concatenated — an encounter spans several pages, and sorting those by y
+    alone would interleave page 2's first line with page 1's last one,
+    scrambling every section boundary downstream.
+    """
+    return sorted(blocks, key=lambda b: (b.page, round(b.y0 / ROW_TOLERANCE), b.x0))
+
+
+@dataclass(frozen=True)
+class Line:
+    """One visual row: the blocks that share a baseline, joined left to right.
+
+    PDF extraction splits a printed line wherever formatting changes, so
+    "1." and "Shoulder Pain, Right" arrive as two blocks of the same row.
+    Parsers that reason about lines need them back together.
+    """
+
+    text: str
+    page: int
+    y0: float
+    x0: float
+    blocks: list[Block]
+
+
+def lines_of(blocks: list[Block]) -> list[Line]:
+    grouped: dict[tuple[int, int], list[Block]] = {}
+    for block in reading_order(blocks):
+        grouped.setdefault((block.page, round(block.y0 / ROW_TOLERANCE)), []).append(block)
+    lines: list[Line] = []
+    for (page, _), row in grouped.items():
+        text = " ".join(b.text for b in row).strip()
+        lines.append(
+            Line(text=text, page=page, y0=min(b.y0 for b in row),
+                 x0=min(b.x0 for b in row), blocks=row)
+        )
+    return lines
 
 
 def text_of(blocks: list[Block]) -> str:
@@ -177,40 +226,65 @@ def header_cut_y(blocks: list[Block], height: float) -> float:
     return height * FALLBACK_HEADER_FRACTION
 
 
-def gutter_x(blocks: list[Block], width: float) -> float | None:
-    """Sidebar/body boundary: the midpoint of the widest empty vertical band in
-    the left portion of the page, or None if this page has no genuine
-    gutter (its content spans the full width, e.g. a single-column
-    continuation page or a two-column body table).
+def gutter_band(blocks: list[Block], width: float) -> tuple[float, float] | None:
+    """Sidebar/body boundary: the widest empty vertical band in the left
+    portion of the page, returned as (left edge, right edge), or None if this
+    page has no genuine gutter (its content spans the full width, e.g. a
+    single-column continuation page or a two-column body table).
+
+    The whole band is returned rather than a single cut line because a
+    sidebar's right edge is ragged — one long drug name reaches much further
+    right than the rest of the rail. A cut at the band's midpoint slices that
+    longest line into the body; keeping the band lets a block be judged
+    against the edge that matters for it.
 
     Returning None — rather than substituting a fixed fraction of the page
     width — is what lets split_regions tell "no sidebar on this page" apart
     from "found one." Manufacturing a split at a fixed fraction when no
     empty band exists would carve an arbitrary vertical slice out of
     full-width content and misclassify it as a sidebar.
+
+    Emptiness is measured by how many text *rows* cross a band, not by
+    whether anything touched it. A full-width footer line crosses the gutter
+    on every page that has one, and a binary "anything touched it" test lets
+    that single line erase a real two-column split — which is exactly what it
+    did to the rendered corpus, dumping the medication rail into the body and
+    scrambling every section boundary after it. A band stays a gutter while no
+    more than GUTTER_MAX_ROW_FRACTION of the page's rows reach into it, so a
+    footer rule is tolerated and a column of text never is.
     """
+    if not blocks:
+        return None
     bins = 200
     bin_width = width / bins
-    occupied = [False] * bins
+
+    rows_in_bin: list[set[int]] = [set() for _ in range(bins)]
+    all_rows: set[int] = set()
     for b in blocks:
+        row = round(b.y0 / ROW_TOLERANCE)
+        all_rows.add(row)
         start = max(0, int(b.x0 / bin_width))
         end = min(bins - 1, int(b.x1 / bin_width))
         for i in range(start, end + 1):
-            occupied[i] = True
+            rows_in_bin[i].add(row)
+    if not all_rows:
+        return None
+    tolerance = GUTTER_MAX_ROW_FRACTION * len(all_rows)
+    free = [len(rows) <= tolerance for rows in rows_in_bin]
 
     lo, hi = int(bins * GUTTER_SEARCH_MIN), int(bins * GUTTER_SEARCH_MAX)
-    best_len, best_mid, run_start = 0, None, None
+    best_len, best_run, run_start = 0, None, None
     for i in range(lo, hi + 1):
-        if not occupied[i]:
+        if free[i]:
             run_start = i if run_start is None else run_start
             length = i - run_start + 1
             if length > best_len:
-                best_len, best_mid = length, (run_start + i) / 2
+                best_len, best_run = length, (run_start, i)
         else:
             run_start = None
-    if best_mid is None or best_len < 2:
+    if best_run is None or best_len < 2:
         return None
-    return best_mid * bin_width
+    return best_run[0] * bin_width, (best_run[1] + 1) * bin_width
 
 
 def split_regions(
@@ -219,17 +293,30 @@ def split_regions(
     """Partition blocks into (header, sidebar, body). Every block lands in
     exactly one region — nothing is discarded. Pages with no genuine gutter
     (content spans the full width) get an empty sidebar, with everything
-    below the header landing in body."""
+    below the header landing in body.
+
+    A block that crosses the whole gutter belongs to neither column — it is a
+    full-width element such as a footer rule — and stays in body.
+    """
     cut = header_cut_y(blocks, height)
     header = [b for b in blocks if b.y0 < cut]
     below = [b for b in blocks if b.y0 >= cut]
-    gutter = gutter_x(below, width) if below else None
-    if gutter is None:
-        sidebar: list[Block] = []
-        body = list(below)
-    else:
-        sidebar = [b for b in below if b.x1 <= gutter]
-        body = [b for b in below if b.x1 > gutter]
+    band = gutter_band(below, width) if below else None
+    sidebar: list[Block] = []
+    body = list(below)
+    if band is not None:
+        band_start, band_end = band
+        left = [b for b in below if b.x1 <= band_end]
+        right = [b for b in below if b.x1 > band_end]
+        if left and right:
+            # The rail's own width, against everything to the right of the
+            # gutter. The right side is measured from the gutter rather than
+            # from its leftmost block, because a full-width footer would
+            # otherwise stretch it and make any two columns look like a rail.
+            left_width = max(b.x1 for b in left) - min(b.x0 for b in left)
+            right_width = max(b.x1 for b in right) - band_end
+            if left_width <= SIDEBAR_MAX_WIDTH_RATIO * right_width:
+                sidebar, body = left, right
     return reading_order(header), reading_order(sidebar), reading_order(body)
 
 
