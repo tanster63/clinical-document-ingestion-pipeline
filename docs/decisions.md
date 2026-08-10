@@ -316,7 +316,142 @@ than quietly rounding it away.
 
 ---
 
-## 15. The circularity of scoring against self-generated charts
+## 15. The authored charts reproduce the source system's layout, not just its data
+
+**Alternative:** a clean, modern template that carries the same facts.
+
+**Why:** §5.2 asks for charts that "look as though they came out of the same
+system as the sample — same layout, same section headings, same conventions".
+The first version of the corpus did not: it printed `CHIEF COMPLAINT` where the
+sample prints `Chief Complaints:`, a rail of `CURRENT MEDICATIONS / ALLERGIES /
+LOCATION` where the sample prints seven history sections, and a one-sentence
+prose exam where the sample prints a two-column table. Side by side they read as
+two different products.
+
+That is not only a presentation problem. It meant the sample's hardest features —
+the label/value header grid, the merged BMI/BSA cell, the two-column exam, a
+section continued across a page break, an inline `HPI:` heading, a numbered
+problem elaborated by a coded diagnosis — were exercised by exactly one of the
+eight charts. The corpus was not testing the parser; it was testing a second,
+easier parser that happened to share code.
+
+Rebuilding the template against the sample's own measurements — its fonts,
+colours, section labels and rail — found four real parser bugs within an hour:
+a sig that swallowed its own Quantity/Refills tail from the second prescription
+onwards, a study split into two by its own continuation paragraph, an imaging
+date overwritten by the encounter date during a merge, and a footer heuristic
+that read a section label as the clinic's name.
+
+**Costs:** the authored charts are now 2–6 pages each rather than 1, and the
+renderer carries a per-region exam template. `tests/test_render.py` asserts the
+sample's literal labels are present so the two families cannot drift apart again.
+
+---
+
+## 16. The left rail is stored at two different grains
+
+**Alternative:** treat the whole rail one way.
+
+**Why:** the brief describes the rail as "longitudinal context that is true of
+the patient rather than of the visit". That is right about the history sections
+and wrong about the medication list directly above them — meloxicam is absent
+from the July rail and present in the August one. So the rail is split:
+`medication_snapshots` is per encounter, `patient_history` is per patient.
+
+Deciding grain per *fact* rather than per *region of the page* is the whole
+point. Storing history per encounter would multiply one cholecystectomy by the
+number of times the rail reprinted it; storing medications per patient would
+erase the change the chart exists to show.
+
+**Costs:** two tables fed by one parser pass, and a `history_type` vocabulary
+that has to keep `Musculoskeletal Surgery` distinct from `Surgical History`
+because the source system does.
+
+---
+
+## 17. An operative note becomes a procedure row, with its own date
+
+**Alternative:** keep it as prose on the encounter.
+
+**Why:** a procedure is neither a diagnosis nor a prescription — it is something
+that was done — and it usually happened on a different day from the visit that
+reports it. The corpus's post-operative encounter is exactly that: the
+microdiscectomy is on 2025-07-02 and the visit reporting it is on 2025-07-16.
+Folding the two together would put the wrong date on the only surgical fact in
+the warehouse.
+
+**Costs:** one more table, and a parser that depends on the note printing a
+labelled `Procedure:` preamble. A free-prose operative note would yield nothing,
+which is the correct failure.
+
+---
+
+## 18. MERGE alone is not convergence; the writer also sweeps
+
+**Alternative:** merge and stop.
+
+**Why:** MERGE makes re-ingesting *identical* input a no-op, which is what the
+brief asks for. It does not handle a corrected re-export that drops a diagnosis,
+or a parser fix that stops emitting a spurious row: the old row stays beside the
+new ones for ever, and "re-ingesting leaves the dataset in the same state"
+quietly stops being true.
+
+After merging, the writer deletes child rows that this document's encounters no
+longer produce. The sweep is scoped to the encounters the document actually
+carries, so two documents covering different visits can never delete each
+other's rows.
+
+**Costs:** six DELETE statements per document, and a scoping rule that has to
+stay correct. It assumes an encounter's facts come from whichever document
+printed that visit — true here, and the thing to revisit if two systems ever
+export overlapping partial views of one encounter.
+
+---
+
+## 19. An unreadable file is an outcome, not an exception
+
+**Alternative:** let it raise.
+
+**Why:** §7 asks what happens when a chart is malformed. Previously the answer
+was "PyMuPDF raises and the caller decides", which meant the local runner aborted
+mid-corpus and the `documents` row with `parse_status='failed'` that the
+architecture promised was never written. Now a file that will not open still
+lands its provenance — content hash, byte size, filename identifiers — plus one
+`error` issue naming the exception, and nothing else, because there is nothing
+else to read.
+
+A chart that opens but yields no identity produces **no patient row at all**. A
+fabricated `UNKNOWN-…` patient would be a row nobody can trace to a person,
+sitting in the table clinical questions are counted from.
+
+**Costs:** `ExtractedDocument.patient` is now optional, so every consumer has to
+handle its absence.
+
+---
+
+## 20. The SQL guard blocks writes, not syntax it does not recognise
+
+**Alternative:** keep the deny-list broad on the theory that stricter is safer.
+
+**Why:** a guard that refuses valid read-only SQL is not safer, it is broken —
+the model works around it, or the question simply goes unanswered. Three
+refusals were doing exactly that: `EXTRACT(MONTH FROM encounter_date)` was read
+as a table reference, so every date-part grouping was rejected; `REPLACE()` was
+treated as a write, though only `CREATE OR REPLACE` is dangerous and `CREATE` is
+already caught; and `LIMIT 500 OFFSET 20` defeated the clamp regex, which then
+appended a second `LIMIT` and produced invalid SQL.
+
+The write allow-list, the single-statement rule, the dataset and view scoping,
+and the dry-run byte cap all stay. What changed is that they now fire on writes
+rather than on unfamiliar function syntax.
+
+**Costs:** the skeleton the guard inspects needs one neutralisation rule per
+function whose arguments contain a SQL keyword. Three are handled; a fourth
+would need adding.
+
+---
+
+## 21. The circularity of scoring against self-generated charts
 
 Seven of the eight charts were rendered from the JSON specs they are scored
 against, so the parser and the generator share assumptions about layout. That

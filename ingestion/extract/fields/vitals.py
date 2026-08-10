@@ -4,8 +4,8 @@ A blank cell in the source table produces **no text block at all**, so column
 position cannot be trusted: the provided chart fills only Ht, Wt, BMI and BSA,
 and a positional reader slides those four values under BP, Pulse, Resp and O2.
 Values are therefore paired to their label by horizontal overlap, which is
-immune to however many cells were left empty. NULLs are the record of the gap
-(§4.4), never a shifted neighbour.
+immune to however many cells were left empty. NULLs are the record of the gap,
+never a shifted neighbour.
 
 One further wrinkle from the real export: a renderer may merge adjacent header
 cells ("BMI BSA") and their values ("42.8 2.3"). A label cell that resolves to

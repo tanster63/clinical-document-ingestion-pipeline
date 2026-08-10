@@ -24,7 +24,7 @@ flowchart TB
 
     subgraph BQ["BigQuery"]
         I[("staging table<br/>load job")]
-        J[("12 tables<br/>MERGE on natural key")]
+        J[("14 tables<br/>MERGE on natural key")]
         K["v_encounter_summary<br/>v_patient_timeline"]
     end
 
@@ -90,10 +90,10 @@ to SQL.
 
 | Failure | Behaviour |
 | --- | --- |
+| Unreadable file | `documents` row with `parse_status='failed'`, an `error` issue naming the exception, and no fabricated patient. Nothing raises. |
 | Missing section | `warn` row in `ingestion_issues`; the encounter still lands |
 | Field fails validation | `error` row; that field's row is dropped, the rest of the document lands |
 | One bad encounter | guarded independently; its siblings are unaffected |
-| Unparseable file | `documents` row with `parse_status='failed'`, plus an `ingest_runs` row |
 | Download or warehouse error | `ingest_runs` row with `status='failed'` and the exception text |
 
 ## Configuration

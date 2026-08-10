@@ -1,4 +1,4 @@
-"""Follow-up interval, normalized to days (§6.1).
+"""Follow-up interval, normalized to days.
 
 The raw phrasing is kept alongside the number. "Return as needed" carries real
 clinical meaning that no integer can hold, and losing it to a NULL would be a

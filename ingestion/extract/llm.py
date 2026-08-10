@@ -1,6 +1,6 @@
 """The only LLM in the pipeline.
 
-Scope is deliberately narrow (§6.3): four columns on `encounters`, derived from
+Scope is deliberately narrow: four columns on `encounters`, derived from
 prose that has no deterministic structure to parse. Identifiers, dates, ICD-10
 codes, prescriptions, vitals, provider, and follow-up intervals are never routed
 here, because a wrong value in any of them is unacceptable and a model cannot
