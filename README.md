@@ -45,7 +45,7 @@ closely:
 | Deterministic accuracy, **provided chart** | **89.9%** (71/79) |
 | LLM-derived accuracy | unscored without Vertex AI credentials — see below |
 | Tables / views | 12 / 2 |
-| Tests | 253 passing, 5 more against live BigQuery |
+| Tests | 282 passing, 5 more against live BigQuery |
 | Extraction errors across all 8 charts | 0 |
 
 The provided chart is the number that means something: it is the only chart this
@@ -61,7 +61,7 @@ almost every respect. Its ten-point gap is one deliberate refusal, explained in
 python3.11 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt -r requirements-dev.txt
 
-pytest                       # 253 tests, including the provided chart end to end
+pytest                       # 282 tests, including the provided chart end to end
 python scripts/run_local.py  # every chart through the real pipeline, no GCP
 ```
 
@@ -158,7 +158,7 @@ instructed never to read an absence as a normal reading.
 ## Testing
 
 ```bash
-pytest                                   # 253 tests, no credentials needed
+pytest                                   # 282 tests, no credentials needed
 pytest -m golden -v                      # just the provided chart, end to end
 RUN_LIVE_TESTS=1 pytest tests/test_warehouse_live.py   # needs GCP + a sourced .env
 python -m eval.accuracy                  # regenerates eval/report.md
