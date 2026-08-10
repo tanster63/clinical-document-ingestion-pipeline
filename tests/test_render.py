@@ -1,8 +1,21 @@
 import fitz
 import pytest
 
-from corpus.render import render_chart
 from corpus.spec_model import load_spec
+
+# WeasyPrint links against Pango and Cairo at import time, and reports a missing
+# one as OSError rather than ImportError. Those are corpus-authoring
+# dependencies, not runtime ones — nothing that gets deployed renders a PDF — so
+# a machine without them skips this file rather than failing a suite it cannot
+# satisfy. The README carries the one-line macOS fix.
+try:
+    from corpus.render import render_chart
+except (ImportError, OSError) as exc:  # pragma: no cover - environment-dependent
+    pytest.skip(
+        f"WeasyPrint's native libraries are not loadable here ({exc}); "
+        "see the README for the macOS DYLD_FALLBACK_LIBRARY_PATH note",
+        allow_module_level=True,
+    )
 
 SPEC = "corpus/specs/chart_01.json"
 

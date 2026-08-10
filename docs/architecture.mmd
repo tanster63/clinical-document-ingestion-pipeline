@@ -1,0 +1,38 @@
+flowchart TB
+    subgraph Source["Charts"]
+        A["8 chart PDFs<br/>1 provided, 7 authored<br/>15 encounters"]
+    end
+
+    subgraph GCS["Cloud Storage"]
+        B[("gs://bucket/incoming/")]
+    end
+
+    subgraph CR["Cloud Run"]
+        C["chart-ingest — FastAPI<br/><i>chart-ingest-sa</i><br/>GCS read + BigQuery write"]
+        H["chart-agent — Google ADK<br/><i>chart-agent-sa</i><br/>BigQuery read only"]
+    end
+
+    subgraph Extract["Extraction, in process"]
+        D["layout<br/>PyMuPDF geometry"]
+        E["encounter split<br/>counter reset + service date"]
+        F["field parsers<br/>deterministic"]
+        G["Gemini<br/>4 prose columns"]
+    end
+
+    subgraph BQ["BigQuery"]
+        I[("staging table<br/>load job")]
+        J[("12 tables<br/>MERGE on natural key")]
+        K["v_encounter_summary<br/>v_patient_timeline"]
+    end
+
+    A -->|gcloud storage cp| B
+    B -->|Eventarc object.finalized| C
+    A -.->|POST /ingest| C
+    C --> D --> E --> F --> I
+    F -.->|prose only| G -.-> I
+    I -->|MERGE| J --> K
+    K --> H
+    H -->|natural language| L(["User"])
+
+    classDef llm fill:#fff3cd,stroke:#856404,color:#111
+    class G llm
