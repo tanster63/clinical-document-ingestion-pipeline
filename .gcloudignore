@@ -1,0 +1,18 @@
+# Keeps the deployed image small and free of anything it must not carry.
+.git/
+.venv/
+.pytest_cache/
+.ruff_cache/
+__pycache__/
+tests/
+corpus/
+charts/
+eval/
+docs/
+agent/
+scripts/
+build/
+*.pdf
+.env
+.env.*
+!.env.example
