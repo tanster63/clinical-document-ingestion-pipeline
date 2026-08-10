@@ -26,3 +26,7 @@ corpus/.render_tmp/
 
 # macOS
 .DS_Store
+
+# Copied into the agent bundle at deploy time so `adk deploy` ships one module
+# instead of the whole ingestion package. Generated, never edited.
+agent/_config.py
