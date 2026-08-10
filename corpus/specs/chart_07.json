@@ -1,0 +1,107 @@
+{
+  "chart_id": "chart_07",
+  "file_name": "EMA_20250801T130000_0000_MRN4471982_PMS8815337_PID20195022_PatientChart_400717.pdf",
+  "location_name": "Cumberland Murfreesboro",
+  "location_address": "1720 Medical Center Pkwy, Murfreesboro TN 37129",
+  "patient": {
+    "mrn": "4471982",
+    "pms_id": "8815337",
+    "family_name": "PETROVA",
+    "given_name": "LIUDMILA",
+    "preferred_name": "Mila Petrova",
+    "date_of_birth": "1979-09-09",
+    "sex": "Female",
+    "phone_home": "(615) 555-0155"
+  },
+  "encounters": [
+    {
+      "encounter_date": "2025-08-01",
+      "provider_name": "Yusuf Halloran",
+      "provider_role": "DO",
+      "is_primary_provider": true,
+      "chief_complaint": "Neck pain radiating into the right arm, 4 weeks.",
+      "hpi_text": "Patient reports four weeks of neck pain radiating into the right arm to the thumb and index finger, associated with intermittent numbness and tingling. Symptoms began without clear trauma, possibly after a long drive. Pain worsens with neck extension and looking over the right shoulder, improves with the arm overhead. Denies weakness, gait disturbance, or bowel or bladder changes.",
+      "exam_text": "Cervical spine: decreased range of motion in extension and right rotation with pain. Positive Spurling test on the right reproducing arm symptoms. Biceps strength 4/5 on the right, sensation diminished over the right thumb and index finger. Reflexes symmetric.",
+      "note_text": "Findings consistent with right C6 cervical radiculopathy. Ordered a cervical MRI without contrast given the neurologic findings. Prescribed a short oral prednisone taper and cyclobenzaprine for muscle spasm while awaiting imaging. Discussed activity modification and cervical traction.",
+      "follow_up_raw": "Follow up in 3 weeks",
+      "signed_by": "Yusuf Halloran, DO",
+      "signed_at": "2025-08-01T13:00:00",
+      "body_region": "cervical spine",
+      "laterality": "none",
+      "visit_type": "new",
+      "vitals": {
+        "taken_by": "R. Diaz, MA",
+        "taken_date": "2025-08-01",
+        "bp_systolic": 130,
+        "bp_diastolic": 82,
+        "pulse": 74,
+        "respirations": 16,
+        "o2_sat": 98,
+        "temperature_f": 98.4,
+        "height_in": 65.0,
+        "weight_lbs": 150.2,
+        "bmi": 25.0,
+        "bsa": 1.76,
+        "is_patient_reported": false
+      },
+      "current_medications": [
+        {
+          "medication_name": "omeprazole",
+          "route": "Oral"
+        }
+      ],
+      "diagnoses": [
+        {
+          "icd10_code": "M50.122",
+          "icd10_description": "Cervical disc disorder with radiculopathy, mid-cervical region",
+          "diagnosis_text": "Cervical disc disorder with radiculopathy, mid-cervical region",
+          "is_primary": true,
+          "source": "impression"
+        },
+        {
+          "icd10_code": "M54.12",
+          "icd10_description": "Radiculopathy, cervical region",
+          "diagnosis_text": "Cervical radiculopathy",
+          "is_primary": false,
+          "source": "impression"
+        }
+      ],
+      "prescriptions": [
+        {
+          "drug_name": "cyclobenzaprine",
+          "strength": "10",
+          "strength_unit": "mg",
+          "dose_form": "tablet",
+          "route": "PO",
+          "sig_text": "Take 1 po qhs x 2 weeks",
+          "quantity": 14,
+          "quantity_unit": "Tablet",
+          "refills": 0,
+          "action": "new"
+        },
+        {
+          "drug_name": "prednisone",
+          "strength": "10",
+          "strength_unit": "mg",
+          "dose_form": "tablet",
+          "route": "PO",
+          "sig_text": "Take 4 tabs day 1, taper by 1 tab daily",
+          "quantity": 21,
+          "quantity_unit": "Tablet",
+          "refills": 0,
+          "action": "new"
+        }
+      ],
+      "imaging": [
+        {
+          "modality": "MRI",
+          "body_part": "cervical spine",
+          "laterality": null,
+          "performed_date": "2025-08-01",
+          "interpretation_text": "MRI of the cervical spine without contrast. Right paracentral disc protrusion at C5-C6 causing moderate right neural foraminal narrowing and contact with the exiting right C6 nerve root. No spinal cord signal abnormality.",
+          "impression": "Right C5-C6 disc protrusion with right C6 nerve root impingement, correlating with clinical radiculopathy."
+        }
+      ]
+    }
+  ]
+}

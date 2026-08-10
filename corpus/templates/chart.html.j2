@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>{{ css }}</style></head>
+<body>
+<div class="header">
+  <div class="practice">Cumberland Orthopedics &amp; Sports Medicine</div>
+  <div class="addr">{{ chart.location_name }} &middot; {{ chart.location_address }}</div>
+  <div class="patient-name">{{ chart.patient.legal_name }}</div>
+  <div class="idline">
+    <span>DOB: {{ chart.patient.date_of_birth.strftime('%m/%d/%Y') }}</span>
+    <span>Sex: {{ chart.patient.sex }}</span>
+    <span>MRN: {{ chart.patient.mrn }}</span>
+    <span>PMS ID: {{ chart.patient.pms_id }}</span>
+    {% if chart.patient.phone_home %}<span>Home: {{ chart.patient.phone_home }}</span>{% endif %}
+  </div>
+  <div class="idline"><span>Date of Service: {{ enc.encounter_date.strftime('%m/%d/%Y') }}</span>
+    <span>Provider: {{ enc.provider_name }}, {{ enc.provider_role }}</span></div>
+</div>
+
+<div class="sidebar">
+  <h3>Current Medications</h3>
+  <ul>
+  {% for m in enc.current_medications %}<li>{{ m.medication_name }}{% if m.route %} — {{ m.route }}{% endif %}</li>
+  {% else %}<li>None recorded</li>{% endfor %}
+  </ul>
+  <h3>Allergies</h3><ul><li>No Known Drug Allergies</li></ul>
+  <h3>Location</h3><ul><li>{{ chart.location_name }}</li></ul>
+</div>
+
+<div class="content">
+  <h2>Chief Complaint</h2>
+  <p>{{ enc.chief_complaint }}</p>
+
+  <h2>History of Present Illness</h2>
+  <p>{{ enc.hpi_text }}</p>
+
+  {% if enc.vitals %}
+  <h2>Vitals</h2>
+  <table class="vitals">
+    <tr><th>BP</th><th>Pulse</th><th>Resp</th><th>O2 Sat</th><th>Temp</th>
+        <th>Ht (in)</th><th>Wt (lbs)</th><th>BMI</th><th>BSA</th></tr>
+    <tr>
+      <td>{% if enc.vitals.bp_systolic %}{{ enc.vitals.bp_systolic }}/{{ enc.vitals.bp_diastolic }}{% endif %}</td>
+      <td>{{ enc.vitals.pulse or '' }}</td><td>{{ enc.vitals.respirations or '' }}</td>
+      <td>{{ enc.vitals.o2_sat or '' }}</td><td>{{ enc.vitals.temperature_f or '' }}</td>
+      <td>{{ enc.vitals.height_in or '' }}</td><td>{{ enc.vitals.weight_lbs or '' }}</td>
+      <td>{{ enc.vitals.bmi or '' }}</td><td>{{ enc.vitals.bsa or '' }}</td>
+    </tr>
+  </table>
+  {% if enc.vitals.is_patient_reported %}<p>* Patient Reported</p>{% endif %}
+  {% endif %}
+
+  {% if enc.exam_text %}<h2>Physical Exam</h2><p>{{ enc.exam_text }}</p>{% endif %}
+
+  {% if enc.imaging %}
+  <h2>Imaging</h2>
+  {% for im in enc.imaging %}
+  <p><b>{{ im.modality }} {{ im.body_part }}{% if im.laterality %} ({{ im.laterality }}){% endif %}</b>
+     — performed {{ im.performed_date.strftime('%m/%d/%Y') }}<br>
+     {{ im.interpretation_text }}<br>Impression: {{ im.impression }}</p>
+  {% endfor %}
+  {% endif %}
+
+  {% if enc.operative_note %}<h2>Operative Note</h2><p>{{ enc.operative_note }}</p>{% endif %}
+
+  <h2>Assessment</h2>
+  <ul>
+  {% for d in enc.diagnoses %}
+    <li>{{ d.diagnosis_text }}{% if d.icd10_code %} ({{ d.icd10_code }}){% endif %}
+        {%- if d.is_primary %} [Primary]{% endif %}</li>
+  {% endfor %}
+  </ul>
+
+  {% if enc.prescriptions %}
+  <h2>Prescriptions</h2>
+  {% for rx in enc.prescriptions %}
+  <div class="rx">
+    <span class="drug">{{ rx.drug_name }} {{ rx.strength }} {{ rx.strength_unit }} {{ rx.dose_form }}</span>
+    — {{ rx.route }}<br>
+    Sig: {{ rx.sig_text }}<br>
+    Quantity: {{ rx.quantity }} {{ rx.quantity_unit }} &nbsp; Refills: {{ rx.refills }}
+    &nbsp; Action: {{ rx.action }}
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  <h2>Plan</h2>
+  <p>{{ enc.note_text }}</p>
+  {% if enc.follow_up_raw %}<p>{{ enc.follow_up_raw }}</p>{% endif %}
+
+  {% if enc.signed_by %}
+  <h2>Signature</h2>
+  <p>Electronically signed by {{ enc.signed_by }} on
+     {{ enc.signed_at.strftime('%m/%d/%Y %I:%M %p') }}</p>
+  {% endif %}
+</div>
+
+<div class="footer">
+  <span>{{ chart.patient.legal_name }} &middot; MRN {{ chart.patient.mrn }}
+        &middot; DOS {{ enc.encounter_date.strftime('%m/%d/%Y') }}</span>
+  <span class="pageno" style="float:right"></span>
+</div>
+</body></html>

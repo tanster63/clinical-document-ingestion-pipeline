@@ -1,0 +1,95 @@
+{
+  "chart_id": "chart_03",
+  "file_name": "EMA_20250702T140000_0000_MRN7345209_PMS4402118_PID20194618_PatientChart_400313.pdf",
+  "location_name": "Cumberland Brentwood",
+  "location_address": "4410 Maryland Farms, Brentwood TN 37027",
+  "patient": {
+    "mrn": "7345209",
+    "pms_id": "4402118",
+    "family_name": "DELACROIX",
+    "given_name": "MARISOL",
+    "preferred_name": "Mari Delacroix",
+    "date_of_birth": "1989-02-17",
+    "sex": "Female",
+    "phone_home": "(615) 555-0161"
+  },
+  "encounters": [
+    {
+      "encounter_date": "2025-07-02",
+      "provider_name": "Marla Whitcomb",
+      "provider_role": "NP",
+      "is_primary_provider": true,
+      "chief_complaint": "Right wrist pain at the base of the thumb, 3 weeks.",
+      "hpi_text": "Patient reports three weeks of right radial-sided wrist pain that began after increased computer use and lifting her toddler. Pain worsens with thumb use, gripping, and ulnar deviation of the wrist. No history of trauma. Denies numbness or tingling in the hand.",
+      "exam_text": "Right wrist: tenderness over the first dorsal compartment at the radial styloid, positive Finkelstein test. No swelling of the MCP or PIP joints, full digit range of motion, sensation intact throughout.",
+      "note_text": "Findings consistent with de Quervain tenosynovitis. Obtained wrist x-rays to rule out osseous pathology given point tenderness. Thumb spica splint recommended in addition to scheduled NSAIDs and activity modification. Will consider a corticosteroid injection if not improved at follow-up.",
+      "follow_up_raw": "Follow up in 4 weeks",
+      "signed_by": "Marla Whitcomb, NP",
+      "signed_at": "2025-07-02T14:00:00",
+      "body_region": "hand/wrist",
+      "laterality": "right",
+      "visit_type": "new",
+      "vitals": {
+        "taken_by": "R. Diaz, MA",
+        "taken_date": "2025-07-02",
+        "bp_systolic": 118,
+        "bp_diastolic": 76,
+        "pulse": 72,
+        "respirations": 16,
+        "o2_sat": 99,
+        "temperature_f": 98.2,
+        "height_in": 64.0,
+        "weight_lbs": 142.0,
+        "bmi": 24.4,
+        "bsa": 1.75,
+        "is_patient_reported": false
+      },
+      "current_medications": [
+        {
+          "medication_name": "levothyroxine",
+          "route": "Oral"
+        }
+      ],
+      "diagnoses": [
+        {
+          "icd10_code": "M65.4",
+          "icd10_description": "Radial styloid tenosynovitis [de Quervain]",
+          "diagnosis_text": "Right radial styloid tenosynovitis (de Quervain)",
+          "is_primary": true,
+          "source": "impression"
+        },
+        {
+          "icd10_code": "M25.531",
+          "icd10_description": "Pain in right wrist",
+          "diagnosis_text": "Pain in right wrist",
+          "is_primary": false,
+          "source": "impression"
+        }
+      ],
+      "prescriptions": [
+        {
+          "drug_name": "naproxen",
+          "strength": "500",
+          "strength_unit": "mg",
+          "dose_form": "tablet",
+          "route": "PO",
+          "sig_text": "Take 1 po bid x 2 weeks with food",
+          "quantity": 28,
+          "quantity_unit": "Tablet",
+          "refills": 1,
+          "action": "new"
+        }
+      ],
+      "imaging": [
+        {
+          "modality": "XR",
+          "body_part": "wrist",
+          "laterality": "right",
+          "performed_date": "2025-07-02",
+          "interpretation_text": "Three views of the right wrist. No fracture or dislocation. Normal bone density and joint alignment. Soft tissue swelling overlying the radial styloid.",
+          "impression": "No acute osseous abnormality, right wrist; findings compatible with clinical diagnosis of de Quervain tenosynovitis."
+        }
+      ]
+    }
+  ]
+}

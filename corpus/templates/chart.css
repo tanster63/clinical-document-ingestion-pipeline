@@ -1,0 +1,39 @@
+@page {
+  size: Letter;
+  margin: 1.55in 0.5in 0.7in 0.5in;
+}
+body { font-family: "Helvetica", "Arial", sans-serif; font-size: 8.5pt; color: #111; }
+
+.header {
+  position: fixed; top: -1.45in; left: 0; right: 0; height: 1.3in;
+  border-bottom: 1.5pt solid #444; padding-bottom: 4pt;
+}
+.header .practice { font-size: 12pt; font-weight: bold; }
+.header .addr { font-size: 7.5pt; color: #444; }
+.header .patient-name { font-size: 11pt; font-weight: bold; margin-top: 5pt; }
+.header .idline { font-size: 8pt; }
+.header .idline span { margin-right: 18pt; }
+
+.sidebar {
+  position: fixed; top: 0; left: 0; width: 1.75in; bottom: 0.2in;
+  border-right: 0.75pt solid #999; padding-right: 8pt; font-size: 7.5pt;
+}
+.sidebar h3 { font-size: 8pt; text-transform: uppercase; margin: 8pt 0 3pt; }
+.sidebar ul { list-style: none; padding-left: 0; margin: 0; }
+.sidebar li { margin-bottom: 2pt; }
+
+.content { margin-left: 2.0in; }
+.content h2 {
+  font-size: 9.5pt; text-transform: uppercase; border-bottom: 0.75pt solid #666;
+  margin: 10pt 0 4pt; padding-bottom: 1pt;
+}
+table.vitals { border-collapse: collapse; width: 100%; font-size: 8pt; }
+table.vitals th, table.vitals td { border: 0.5pt solid #bbb; padding: 2pt 4pt; text-align: left; }
+.rx { margin-bottom: 6pt; }
+.rx .drug { font-weight: bold; }
+
+.footer {
+  position: fixed; bottom: -0.55in; left: 0; right: 0;
+  font-size: 7pt; color: #555; border-top: 0.5pt solid #bbb; padding-top: 2pt;
+}
+.footer .pageno::after { content: "Page " counter(page); }

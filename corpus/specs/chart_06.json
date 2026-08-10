@@ -1,0 +1,133 @@
+{
+  "chart_id": "chart_06",
+  "file_name": "EMA_20250708T091500_0000_MRN3096841_PMS7729450_PID20194921_PatientChart_400616.pdf",
+  "location_name": "Cumberland Brentwood",
+  "location_address": "4410 Maryland Farms, Brentwood TN 37027",
+  "patient": {
+    "mrn": "3096841",
+    "pms_id": "7729450",
+    "family_name": "FONTAINE",
+    "given_name": "DESMOND",
+    "preferred_name": "Des Fontaine",
+    "date_of_birth": "1982-06-14",
+    "sex": "Male",
+    "phone_home": "(615) 555-0138"
+  },
+  "encounters": [
+    {
+      "encounter_date": "2025-07-08",
+      "provider_name": "Dorian Vance",
+      "provider_role": "MD",
+      "is_primary_provider": true,
+      "chief_complaint": "Right elbow pain, worse with gripping, 5 weeks.",
+      "hpi_text": "Patient reports five weeks of right lateral elbow pain that began after increased racquet sport activity. Pain is worse with gripping, lifting objects with the palm down, and shaking hands. No numbness or tingling into the hand. No prior elbow injury.",
+      "exam_text": "Right elbow: point tenderness over the lateral epicondyle, pain reproduced with resisted wrist extension and resisted middle finger extension. Full elbow flexion and extension, no effusion, stable to varus and valgus stress.",
+      "note_text": "Findings consistent with lateral epicondylitis. Recommended a counterforce brace, activity modification avoiding racquet sports, and scheduled NSAIDs. Discussed an eccentric wrist extensor strengthening program. No imaging indicated given the classic clinical presentation.",
+      "follow_up_raw": "Follow up in 4 weeks",
+      "signed_by": "Dorian Vance, MD",
+      "signed_at": "2025-07-08T09:15:00",
+      "body_region": "elbow",
+      "laterality": "right",
+      "visit_type": "new",
+      "vitals": {
+        "taken_by": "T. Nguyen, MA",
+        "taken_date": "2025-07-08",
+        "bp_systolic": 124,
+        "bp_diastolic": 78,
+        "pulse": 68,
+        "respirations": 14,
+        "o2_sat": 99,
+        "temperature_f": 98.3,
+        "height_in": 72.0,
+        "weight_lbs": 195.0,
+        "bmi": 26.4,
+        "bsa": 2.05,
+        "is_patient_reported": false
+      },
+      "current_medications": [],
+      "diagnoses": [
+        {
+          "icd10_code": "M77.11",
+          "icd10_description": "Lateral epicondylitis, right elbow",
+          "diagnosis_text": "Lateral epicondylitis, right elbow",
+          "is_primary": true,
+          "source": "impression"
+        }
+      ],
+      "prescriptions": [
+        {
+          "drug_name": "ibuprofen",
+          "strength": "800",
+          "strength_unit": "mg",
+          "dose_form": "tablet",
+          "route": "PO",
+          "sig_text": "Take 1 po tid x 2 weeks with food",
+          "quantity": 42,
+          "quantity_unit": "Tablet",
+          "refills": 1,
+          "action": "new"
+        }
+      ]
+    },
+    {
+      "encounter_date": "2025-08-05",
+      "provider_name": "Dorian Vance",
+      "provider_role": "MD",
+      "is_primary_provider": true,
+      "chief_complaint": "Follow-up right lateral elbow pain, partial improvement.",
+      "hpi_text": "Patient returns reporting about thirty percent improvement in right elbow pain with brace use and activity modification. Still has pain with heavy gripping tasks at work. Has been compliant with home eccentric strengthening exercises.",
+      "exam_text": "Right elbow: mild residual tenderness over the lateral epicondyle, improved strength with resisted wrist extension, full range of motion, no effusion.",
+      "note_text": "Continued improvement in lateral epicondylitis with conservative management. Adjusting ibuprofen to an as-needed dosing schedule and continuing eccentric strengthening. Will consider a corticosteroid injection if there is a plateau in improvement.",
+      "follow_up_raw": "Follow up in 8 weeks",
+      "signed_by": "Dorian Vance, MD",
+      "signed_at": "2025-08-05T09:30:00",
+      "body_region": "elbow",
+      "laterality": "right",
+      "visit_type": "follow_up",
+      "vitals": {
+        "taken_by": "T. Nguyen, MA",
+        "taken_date": "2025-08-05",
+        "bp_systolic": 122,
+        "bp_diastolic": 76,
+        "pulse": 66,
+        "respirations": 14,
+        "o2_sat": 99,
+        "temperature_f": 98.1,
+        "height_in": 72.0,
+        "weight_lbs": 194.0,
+        "bmi": 26.3,
+        "bsa": 2.04,
+        "is_patient_reported": false
+      },
+      "current_medications": [
+        {
+          "medication_name": "ibuprofen",
+          "route": "Oral"
+        }
+      ],
+      "diagnoses": [
+        {
+          "icd10_code": "M77.11",
+          "icd10_description": "Lateral epicondylitis, right elbow",
+          "diagnosis_text": "Lateral epicondylitis, right elbow, improving",
+          "is_primary": true,
+          "source": "impression"
+        }
+      ],
+      "prescriptions": [
+        {
+          "drug_name": "ibuprofen",
+          "strength": "600",
+          "strength_unit": "mg",
+          "dose_form": "tablet",
+          "route": "PO",
+          "sig_text": "Take 1 po tid PRN with food",
+          "quantity": 30,
+          "quantity_unit": "Tablet",
+          "refills": 1,
+          "action": "modify"
+        }
+      ]
+    }
+  ]
+}
