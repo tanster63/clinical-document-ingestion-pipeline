@@ -11,7 +11,19 @@
     "preferred_name": "Ade Okonkwo",
     "date_of_birth": "1974-11-23",
     "sex": "Male",
-    "phone_home": "(615) 555-0192"
+    "phone_home": "(615) 555-0192",
+    "history": {
+      "medical": [
+        "Type 2 diabetes mellitus",
+        "Gastroesophageal reflux disease"
+      ],
+      "musculoskeletal": [
+        "Chronic low back pain"
+      ],
+      "social": [
+        "Smoking status - Former smoker"
+      ]
+    }
   },
   "encounters": [
     {
@@ -92,9 +104,29 @@
           "laterality": null,
           "performed_date": "2025-05-14",
           "interpretation_text": "Two views of the lumbar spine. Mild multilevel degenerative disc space narrowing. No fracture, spondylolisthesis, or acute osseous abnormality.",
-          "impression": "Mild lumbar spondylosis; no acute osseous findings."
+          "impression": "Mild lumbar spondylosis; no acute osseous findings.",
+          "films": "The following film(s) were done in our facility: lumbar spine AP view and lateral view",
+          "coded_diagnosis_line": "Low Back Pain, Left - M51.16"
         }
-      ]
+      ],
+      "problem_title": "Low Back Pain, Left",
+      "exam_findings": {
+        "rom_active": {
+          "Right": {
+            "Flexion": "45 degrees",
+            "Extension": "15 degrees"
+          }
+        },
+        "inspection": {
+          "Right": "paraspinal tenderness at L5-S1, no midline step-off"
+        },
+        "stability": {
+          "Right": "No instability"
+        },
+        "special": {
+          "Right": "Straight leg raise: positive on the left at 40 degrees"
+        }
+      }
     },
     {
       "encounter_date": "2025-06-25",
@@ -178,9 +210,28 @@
           "laterality": null,
           "performed_date": "2025-05-20",
           "interpretation_text": "MRI of the lumbar spine without contrast. Left paracentral disc herniation at L5-S1 with left lateral recess narrowing and contact with the descending left S1 nerve root. No central canal stenosis.",
-          "impression": "Left L5-S1 disc herniation with left S1 nerve root impingement."
+          "impression": "Left L5-S1 disc herniation with left S1 nerve root impingement.",
+          "coded_diagnosis_line": "Low Back Pain, Left - M51.16"
         }
-      ]
+      ],
+      "problem_title": "Low Back Pain, Left",
+      "exam_findings": {
+        "rom_active": {
+          "Right": {
+            "Flexion": "45 degrees",
+            "Extension": "15 degrees"
+          }
+        },
+        "inspection": {
+          "Right": "paraspinal tenderness at L5-S1, no midline step-off"
+        },
+        "stability": {
+          "Right": "No instability"
+        },
+        "special": {
+          "Right": "Straight leg raise: positive on the left at 40 degrees"
+        }
+      }
     },
     {
       "encounter_date": "2025-07-16",
@@ -262,7 +313,31 @@
           "action": "new"
         }
       ],
-      "imaging": []
+      "imaging": [],
+      "problem_title": "Low Back Pain, Left",
+      "exam_findings": {
+        "rom_active": {
+          "Right": {
+            "Flexion": "45 degrees",
+            "Extension": "15 degrees"
+          }
+        },
+        "inspection": {
+          "Right": "paraspinal tenderness at L5-S1, no midline step-off"
+        },
+        "stability": {
+          "Right": "No instability"
+        },
+        "special": {
+          "Right": "Straight leg raise: positive on the left at 40 degrees"
+        }
+      },
+      "plan_lines": [
+        "Post-operative Care."
+      ],
+      "procedure_name": "Left L5-S1 microdiscectomy",
+      "procedure_date": "2025-07-02",
+      "surgeon": "Dorian Vance, MD"
     }
   ]
 }

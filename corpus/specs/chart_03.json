@@ -11,7 +11,15 @@
     "preferred_name": "Mari Delacroix",
     "date_of_birth": "1989-02-17",
     "sex": "Female",
-    "phone_home": "(615) 555-0161"
+    "phone_home": "(615) 555-0161",
+    "history": {
+      "medical": [
+        "Hypothyroidism"
+      ],
+      "social": [
+        "Smoking status - Never smoker"
+      ]
+    }
   },
   "encounters": [
     {
@@ -48,6 +56,10 @@
       "current_medications": [
         {
           "medication_name": "levothyroxine",
+          "route": "Oral"
+        },
+        {
+          "medication_name": "ibuprofen",
           "route": "Oral"
         }
       ],
@@ -88,9 +100,26 @@
           "laterality": "right",
           "performed_date": "2025-07-02",
           "interpretation_text": "Three views of the right wrist. No fracture or dislocation. Normal bone density and joint alignment. Soft tissue swelling overlying the radial styloid.",
-          "impression": "No acute osseous abnormality, right wrist; findings compatible with clinical diagnosis of de Quervain tenosynovitis."
+          "impression": "No acute osseous abnormality, right wrist; findings compatible with clinical diagnosis of de Quervain tenosynovitis.",
+          "films": "The following film(s) were done in our facility: right wrist PA view, lateral view, and oblique view",
+          "coded_diagnosis_line": "Wrist Pain, Right - M65.4"
         }
-      ]
+      ],
+      "problem_title": "Wrist Pain, Right",
+      "exam_findings": {
+        "rom_active": {
+          "Right": {
+            "Extension": "50 degrees",
+            "Flexion": "55 degrees"
+          }
+        },
+        "inspection": {
+          "Right": "tenderness over the first dorsal compartment, mild swelling"
+        },
+        "special": {
+          "Right": "Finkelstein: positive"
+        }
+      }
     }
   ]
 }

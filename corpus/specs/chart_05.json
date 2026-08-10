@@ -11,7 +11,25 @@
     "preferred_name": "Roz Abernathy",
     "date_of_birth": "1951-12-05",
     "sex": "Female",
-    "phone_home": "(615) 555-0117"
+    "phone_home": "(615) 555-0117",
+    "history": {
+      "medical": [
+        "Osteoporosis",
+        "Essential hypertension"
+      ],
+      "musculoskeletal": [
+        "Osteoarthritis, right hip"
+      ],
+      "musculoskeletal_family": [
+        "Mother with hip fracture"
+      ],
+      "surgical": [
+        "Total abdominal hysterectomy"
+      ],
+      "social": [
+        "Smoking status - Never smoker"
+      ]
+    }
   },
   "encounters": [
     {
@@ -89,9 +107,26 @@
           "laterality": "right",
           "performed_date": "2025-04-22",
           "interpretation_text": "Two views of the pelvis and right hip. Severe joint space narrowing of the right hip with subchondral sclerosis, osteophyte formation, and superior migration of the femoral head. Left hip shows mild degenerative change.",
-          "impression": "Severe right hip osteoarthritis."
+          "impression": "Severe right hip osteoarthritis.",
+          "films": "The following film(s) were done in our facility: pelvis AP view and right hip lateral view",
+          "coded_diagnosis_line": "Hip Pain, Right - M16.11"
         }
-      ]
+      ],
+      "problem_title": "Hip Pain, Right",
+      "exam_findings": {
+        "rom_active": {
+          "Right": {
+            "Internal Rotation": "15 degrees",
+            "Flexion": "95 degrees"
+          }
+        },
+        "inspection": {
+          "Right": "groin tenderness, antalgic gait, no warmth"
+        },
+        "special": {
+          "Right": "FABER: positive, FADIR: positive"
+        }
+      }
     },
     {
       "encounter_date": "2025-05-27",
@@ -161,7 +196,25 @@
           "action": "new"
         }
       ],
-      "imaging": []
+      "imaging": [],
+      "problem_title": "Hip Pain, Right",
+      "exam_findings": {
+        "rom_active": {
+          "Right": {
+            "Internal Rotation": "15 degrees",
+            "Flexion": "95 degrees"
+          }
+        },
+        "inspection": {
+          "Right": "groin tenderness, antalgic gait, no warmth"
+        },
+        "special": {
+          "Right": "FABER: positive, FADIR: positive"
+        }
+      },
+      "plan_lines": [
+        "Counseling - Total Hip Arthroplasty."
+      ]
     }
   ]
 }

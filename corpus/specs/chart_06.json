@@ -11,7 +11,12 @@
     "preferred_name": "Des Fontaine",
     "date_of_birth": "1982-06-14",
     "sex": "Male",
-    "phone_home": "(615) 555-0138"
+    "phone_home": "(615) 555-0138",
+    "history": {
+      "social": [
+        "Smoking status - Never smoker"
+      ]
+    }
   },
   "encounters": [
     {
@@ -68,7 +73,16 @@
           "refills": 1,
           "action": "new"
         }
-      ]
+      ],
+      "problem_title": "Elbow Pain, Right",
+      "exam_findings": {
+        "inspection": {
+          "Right": "point tenderness over the lateral epicondyle, no effusion"
+        },
+        "special": {
+          "Right": "Resisted wrist extension: positive, resisted middle finger extension: positive"
+        }
+      }
     },
     {
       "encounter_date": "2025-08-05",
@@ -127,9 +141,18 @@
           "quantity": 30,
           "quantity_unit": "Tablet",
           "refills": 1,
-          "action": "modify"
+          "action": "new"
         }
-      ]
+      ],
+      "problem_title": "Elbow Pain, Right",
+      "exam_findings": {
+        "inspection": {
+          "Right": "point tenderness over the lateral epicondyle, no effusion"
+        },
+        "special": {
+          "Right": "Resisted wrist extension: positive, resisted middle finger extension: positive"
+        }
+      }
     }
   ]
 }

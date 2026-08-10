@@ -11,7 +11,19 @@
     "preferred_name": "Hiro Nakagawa",
     "date_of_birth": "1955-08-30",
     "sex": "Male",
-    "phone_home": null
+    "phone_home": null,
+    "history": {
+      "medical": [
+        "Type 2 diabetes mellitus",
+        "Hyperlipidemia"
+      ],
+      "surgical": [
+        "Appendectomy"
+      ],
+      "social": [
+        "Smoking status - Unspecified"
+      ]
+    }
   },
   "encounters": [
     {
@@ -77,9 +89,25 @@
           "laterality": "left",
           "performed_date": "2025-06-03",
           "interpretation_text": "Weight-bearing views of the left foot. Small plantar calcaneal spur. No stress fracture or acute osseous abnormality. Joint spaces preserved.",
-          "impression": "Plantar calcaneal spur consistent with chronic plantar fasciitis; no acute fracture."
+          "impression": "Plantar calcaneal spur consistent with chronic plantar fasciitis; no acute fracture.",
+          "films": "The following film(s) were done in our facility: left foot weight-bearing AP view and lateral view",
+          "coded_diagnosis_line": "Foot Pain, Left - M72.2"
         }
-      ]
+      ],
+      "problem_title": "Foot Pain, Left",
+      "exam_findings": {
+        "rom_active": {
+          "Left": {
+            "Dorsiflexion": "10 degrees"
+          }
+        },
+        "inspection": {
+          "Left": "tenderness at the plantar fascia insertion, no swelling"
+        },
+        "special": {
+          "Left": "Windlass test: positive"
+        }
+      }
     }
   ]
 }

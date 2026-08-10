@@ -57,6 +57,16 @@ class ImagingSpec(BaseModel):
     performed_date: date | None = None
     interpretation_text: str | None = None
     impression: str | None = None
+    # The source EMR prints the films taken before the findings, under its own
+    # "X-Ray Data:" sub-heading. Reproduced so the corpus exercises the same
+    # multi-paragraph study the provided chart does.
+    films: str | None = None
+    coded_diagnosis_line: str | None = None
+
+    @property
+    def modality_label(self) -> str:
+        """How the EMR spells the modality in a study heading."""
+        return {"XR": "X-Ray", "X-RAY": "X-Ray"}.get(self.modality.upper(), self.modality)
 
 
 class EncounterSpec(BaseModel):
@@ -66,9 +76,22 @@ class EncounterSpec(BaseModel):
     is_primary_provider: bool = True
     chief_complaint: str
     hpi_text: str
+    # The numbered problem heading the EMR prints above the coded diagnosis.
+    # It is the clinician's shorthand ("Shoulder Pain, Right"), not the code's
+    # description ("Pain in right shoulder") — the provided chart prints both.
+    problem_title: str | None = None
+    # Abnormalities only; everything else comes from the region's exam template
+    # in corpus/exam.py, which is how the source EMR fills an exam too.
+    exam_region: str | None = None
+    exam_findings: dict = Field(default_factory=dict)
     exam_text: str | None = None
     note_text: str | None = None
+    # Non-prescription plan entries, printed as the EMR's own "Plan: ..." lines.
+    plan_lines: list[str] = Field(default_factory=list)
     operative_note: str | None = None
+    procedure_name: str | None = None
+    procedure_date: date | None = None
+    surgeon: str | None = None
     follow_up_raw: str | None = None
     # Ground truth only — never rendered. The chart prints prose; this is the
     # interval the author meant by it, so eval/accuracy.py scores the
@@ -82,10 +105,27 @@ class EncounterSpec(BaseModel):
     diagnoses: list[DiagnosisSpec] = Field(default_factory=list)
     prescriptions: list[PrescriptionSpec] = Field(default_factory=list)
     imaging: list[ImagingSpec] = Field(default_factory=list)
-    # Ground truth for the four LLM-derived columns (§6.3):
+    # Ground truth for the four LLM-derived columns:
     body_region: str
     laterality: str
     visit_type: str
+
+
+class HistorySpec(BaseModel):
+    """The left sidebar's longitudinal context.
+
+    The brief calls this out directly: the sidebar carries what is true of the
+    *patient* rather than of the visit. It is therefore modelled on the patient,
+    not the encounter — unlike the medication list beside it, which changes
+    between visits and is captured per encounter.
+    """
+
+    medical: list[str] = Field(default_factory=list)
+    musculoskeletal: list[str] = Field(default_factory=list)
+    musculoskeletal_family: list[str] = Field(default_factory=list)
+    musculoskeletal_surgery: list[str] = Field(default_factory=list)
+    surgical: list[str] = Field(default_factory=list)
+    social: list[str] = Field(default_factory=list)
 
 
 class PatientSpec(BaseModel):
@@ -97,6 +137,7 @@ class PatientSpec(BaseModel):
     date_of_birth: date
     sex: str
     phone_home: str | None = None
+    history: HistorySpec = Field(default_factory=HistorySpec)
 
     @property
     def legal_name(self) -> str:
@@ -109,6 +150,8 @@ class ChartSpec(BaseModel):
     file_name: str
     location_name: str
     location_address: str
+    practice_phone: str = "(615) 555-0100"
+    practice_fax: str = "(615) 555-0198"
     patient: PatientSpec
     encounters: list[EncounterSpec]
 

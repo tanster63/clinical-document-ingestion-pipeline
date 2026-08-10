@@ -1,39 +1,130 @@
+/* Reproduces the source EMR's export, measured off the provided chart:
+   a green practice name and purple patient name in a repeating header band,
+   a left rail of longitudinal context on the first page of each visit, and
+   purple 10pt section labels down the body. Sizes and colours are the ones
+   PyMuPDF reports for the sample, so the authored charts and the provided one
+   present the same parsing problem. */
+
 @page {
   size: Letter;
-  margin: 1.55in 0.5in 0.7in 0.5in;
+  margin: 1.22in 0.55in 0.72in 2.15in;
+
+  /* The page number lives in a margin box, not in the fixed footer below.
+     WeasyPrint lays a fixed element out once and repeats it, so counter(page)
+     inside one resolves a single time and every page prints the same number —
+     silently, and only visibly wrong once a visit runs past one page. */
+  @bottom-right {
+    content: "Page " counter(page);
+    font-family: "Helvetica", "Arial", sans-serif;
+    font-size: 6pt;
+    vertical-align: top;
+    padding-top: 4pt;
+  }
 }
-body { font-family: "Helvetica", "Arial", sans-serif; font-size: 8.5pt; color: #111; }
+
+body {
+  font-family: "Helvetica", "Arial", sans-serif;
+  font-size: 8pt;
+  color: #000;
+  line-height: 1.2;
+}
+
+/* --- repeating header band ------------------------------------------------ */
 
 .header {
-  position: fixed; top: -1.45in; left: 0; right: 0; height: 1.3in;
-  border-bottom: 1.5pt solid #444; padding-bottom: 4pt;
+  position: fixed;
+  top: -1.12in; left: -2.0in; right: -0.05in; height: 0.95in;
+  border-bottom: 2.2pt solid #d8d9da;
 }
-.header .practice { font-size: 12pt; font-weight: bold; }
-.header .addr { font-size: 7.5pt; color: #444; }
-.header .patient-name { font-size: 11pt; font-weight: bold; margin-top: 5pt; }
-.header .idline { font-size: 8pt; }
-.header .idline span { margin-right: 18pt; }
+.header .practice { font-size: 19pt; font-weight: bold; color: #3D8C4A; }
+.header .speciality { font-size: 6pt; color: #502D7F; margin-top: 1pt; }
+.header .visit { font-size: 11pt; color: #502D7F; margin-left: 24pt; }
+.header .who {
+  position: absolute; top: 3pt; right: 0; text-align: right;
+}
+.header .who .name { font-size: 16pt; font-weight: bold; color: #502D7F; }
+.header table.ids { border-collapse: collapse; margin-left: auto; margin-top: 4pt; }
+.header table.ids td { padding: 0 0 0 22pt; text-align: right; }
+.header table.ids tr.labels td { font-size: 6pt; color: #808080; }
+.header table.ids tr.values td { font-size: 8pt; color: #000; }
 
-.sidebar {
-  position: fixed; top: 0; left: 0; width: 1.75in; bottom: 0.2in;
-  border-right: 0.75pt solid #999; padding-right: 8pt; font-size: 7.5pt;
-}
-.sidebar h3 { font-size: 8pt; text-transform: uppercase; margin: 8pt 0 3pt; }
-.sidebar ul { list-style: none; padding-left: 0; margin: 0; }
-.sidebar li { margin-bottom: 2pt; }
+/* --- left rail, first page of each visit only -----------------------------
 
-.content { margin-left: 2.0in; }
-.content h2 {
-  font-size: 9.5pt; text-transform: uppercase; border-bottom: 0.75pt solid #666;
-  margin: 10pt 0 4pt; padding-bottom: 1pt;
+   Positioned into the page's left margin rather than floated. A float narrows
+   line boxes but not block boxes, so the exam tables refused to sit beside it
+   and were pushed to the next page — the visit's whole exam silently vanished
+   off page one. An absolutely-positioned box lands on the page it occurs on and
+   does not repeat, which is exactly the source EMR's behaviour: the rail prints
+   on the first page of each visit and nowhere else. */
+
+.rail {
+  position: absolute;
+  top: 0; left: -2.0in;
+  width: 128pt;
+  height: 8.6in;
+  padding-right: 6pt;
+  border-right: 2pt solid #c7c8ca;
+  font-size: 6pt;
 }
-table.vitals { border-collapse: collapse; width: 100%; font-size: 8pt; }
-table.vitals th, table.vitals td { border: 0.5pt solid #bbb; padding: 2pt 4pt; text-align: left; }
-.rx { margin-bottom: 6pt; }
-.rx .drug { font-weight: bold; }
+.rail h3 { font-size: 10pt; font-weight: bold; color: #502D7F; margin: 9pt 0 2pt; }
+.rail h3.tight { font-size: 8pt; }
+.rail div { margin-bottom: 1pt; }
+
+/* --- body ----------------------------------------------------------------- */
+
+h2.section {
+  font-size: 10pt; font-weight: bold; color: #502D7F;
+  margin: 16pt 0 3pt;
+}
+h2.section.tight { margin-top: 10pt; }
+p { margin: 0 0 6pt; }
+.indent { margin-left: 20pt; }
+.numbered { font-weight: bold; color: #3B5F97; }
+.problemline { margin-top: 2pt; }
+.problem { font-size: 8pt; font-weight: bold; color: #3B5F97; padding-left: 13pt; }
+.coded { margin-left: 20pt; }
+.planline { font-weight: bold; margin-left: 20pt; margin-top: 8pt; }
+.drug { margin-left: 20pt; }
+.sig { font-size: 7pt; font-weight: bold; color: #3F3F3F; margin-left: 20pt; }
+
+/* --- vitals table --------------------------------------------------------- */
+
+table.vitals { border-collapse: collapse; font-size: 8pt; margin-top: 2pt; }
+table.vitals th, table.vitals td {
+  border: 0.5pt solid #000; padding: 1.5pt 4pt; text-align: left; font-weight: normal;
+  vertical-align: top;
+}
+table.vitals th { font-weight: bold; }
+.reported { font-size: 6pt; color: #502D7F; margin-top: 4pt; }
+
+/* --- exam ----------------------------------------------------------------- */
+
+.exam-general div { margin-left: 14pt; margin-bottom: 6pt; }
+.region { font-weight: bold; margin-left: 14pt; margin-top: 10pt; }
+table.exam { width: 100%; border-collapse: collapse; margin-top: 6pt; }
+table.exam td { vertical-align: top; padding: 0 10pt 6pt 0; width: 50%; }
+table.exam td.single { width: 100%; }
+.exam-head { text-decoration: underline; margin-bottom: 2pt; }
+.exam-label { font-weight: bold; text-decoration: underline; margin-bottom: 2pt; }
+
+/* --- tests ---------------------------------------------------------------- */
+
+.study { margin-bottom: 8pt; }
+.study .label { margin-bottom: 2pt; }
+
+/* --- footer --------------------------------------------------------------- */
 
 .footer {
-  position: fixed; bottom: -0.55in; left: 0; right: 0;
-  font-size: 7pt; color: #555; border-top: 0.5pt solid #bbb; padding-top: 2pt;
+  position: fixed;
+  bottom: -0.62in; left: -2.0in; right: -0.05in;
+  border-top: 2pt solid #d8d9da; padding-top: 2pt;
+  font-size: 6pt;
 }
-.footer .pageno::after { content: "Page " counter(page); }
+/* Laid out as a table, not with absolute positioning: WeasyPrint does not
+   resolve counter(page) inside an absolutely-positioned descendant of a fixed
+   element, and every page silently prints the same number. */
+table.ftr { width: 100%; border-collapse: collapse; }
+table.ftr td { vertical-align: top; padding: 0; }
+.footer .ftr-left { padding-left: 135pt; }
+.footer .ftr-site { width: 164pt; }
+.footer .provider { font-size: 8pt; font-weight: bold; }

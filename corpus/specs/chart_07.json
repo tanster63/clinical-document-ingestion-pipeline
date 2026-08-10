@@ -11,7 +11,18 @@
     "preferred_name": "Mila Petrova",
     "date_of_birth": "1979-09-09",
     "sex": "Female",
-    "phone_home": "(615) 555-0155"
+    "phone_home": "(615) 555-0155",
+    "history": {
+      "medical": [
+        "Gastroesophageal reflux disease"
+      ],
+      "musculoskeletal": [
+        "Cervical spondylosis"
+      ],
+      "social": [
+        "Smoking status - Former smoker"
+      ]
+    }
   },
   "encounters": [
     {
@@ -100,8 +111,27 @@
           "laterality": null,
           "performed_date": "2025-08-01",
           "interpretation_text": "MRI of the cervical spine without contrast. Right paracentral disc protrusion at C5-C6 causing moderate right neural foraminal narrowing and contact with the exiting right C6 nerve root. No spinal cord signal abnormality.",
-          "impression": "Right C5-C6 disc protrusion with right C6 nerve root impingement, correlating with clinical radiculopathy."
+          "impression": "Right C5-C6 disc protrusion with right C6 nerve root impingement, correlating with clinical radiculopathy.",
+          "coded_diagnosis_line": "Neck Pain, Right - M50.122"
         }
+      ],
+      "problem_title": "Neck Pain, Right",
+      "exam_findings": {
+        "rom_active": {
+          "Right": {
+            "Right Rotation": "55 degrees",
+            "Extension": "40 degrees"
+          }
+        },
+        "inspection": {
+          "Right": "paraspinal tenderness, no midline step-off"
+        },
+        "special": {
+          "Right": "Spurling: positive on the right"
+        }
+      },
+      "plan_lines": [
+        "Physical Therapy."
       ]
     }
   ]

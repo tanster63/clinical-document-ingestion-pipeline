@@ -11,7 +11,25 @@
     "preferred_name": "Annie Griswold",
     "date_of_birth": "1968-04-02",
     "sex": "Female",
-    "phone_home": "(615) 555-0148"
+    "phone_home": "(615) 555-0148",
+    "history": {
+      "medical": [
+        "Essential hypertension",
+        "Hyperlipidemia"
+      ],
+      "musculoskeletal": [
+        "Osteoarthritis, bilateral knees"
+      ],
+      "musculoskeletal_family": [
+        "Mother with total knee replacement"
+      ],
+      "surgical": [
+        "Cholecystectomy"
+      ],
+      "social": [
+        "Smoking status - Never smoker"
+      ]
+    }
   },
   "encounters": [
     {
@@ -85,8 +103,30 @@
           "laterality": "right",
           "performed_date": "2025-06-11",
           "interpretation_text": "Three views of the right knee. Medial compartment joint space narrowing with subchondral sclerosis and small marginal osteophytes. No acute fracture.",
-          "impression": "Moderate medial compartment osteoarthritis, right knee."
+          "impression": "Moderate medial compartment osteoarthritis, right knee.",
+          "films": "The following film(s) were done in our facility: right knee AP view, lateral view, and sunrise view",
+          "coded_diagnosis_line": "Knee Pain, Right - M17.11"
         }
+      ],
+      "problem_title": "Knee Pain, Right",
+      "exam_findings": {
+        "rom_active": {
+          "Right": {
+            "Flexion": "125 degrees"
+          }
+        },
+        "inspection": {
+          "Right": "small effusion, medial joint line tenderness, no warmth"
+        },
+        "stability": {
+          "Right": "Stable to varus and valgus stress"
+        },
+        "special": {
+          "Right": "McMurray: positive medially, Lachman: negative, anterior drawer: negative"
+        }
+      },
+      "plan_lines": [
+        "Counseling - Osteoarthritis."
       ]
     },
     {
@@ -154,10 +194,27 @@
           "quantity": 30,
           "quantity_unit": "Tablet",
           "refills": 3,
-          "action": "modify"
+          "action": "new"
         }
       ],
-      "imaging": []
+      "imaging": [],
+      "problem_title": "Knee Pain, Right",
+      "exam_findings": {
+        "rom_active": {
+          "Right": {
+            "Flexion": "125 degrees"
+          }
+        },
+        "inspection": {
+          "Right": "small effusion, medial joint line tenderness, no warmth"
+        },
+        "stability": {
+          "Right": "Stable to varus and valgus stress"
+        },
+        "special": {
+          "Right": "McMurray: positive medially, Lachman: negative, anterior drawer: negative"
+        }
+      }
     },
     {
       "encounter_date": "2025-08-20",
@@ -227,7 +284,27 @@
           "action": "new"
         }
       ],
-      "imaging": []
+      "imaging": [],
+      "problem_title": "Knee Pain, Right",
+      "exam_findings": {
+        "rom_active": {
+          "Right": {
+            "Flexion": "125 degrees"
+          }
+        },
+        "inspection": {
+          "Right": "small effusion, medial joint line tenderness, no warmth"
+        },
+        "stability": {
+          "Right": "Stable to varus and valgus stress"
+        },
+        "special": {
+          "Right": "McMurray: positive medially, Lachman: negative, anterior drawer: negative"
+        }
+      },
+      "plan_lines": [
+        "Physical Therapy."
+      ]
     }
   ]
 }

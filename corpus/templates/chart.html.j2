@@ -1,102 +1,189 @@
+{#- One visit, in the shape the source EMR exports it. Section labels, their
+    order, and the sidebar's sections are copied from the provided chart so the
+    authored corpus presents the same extraction problem. -#}
 <!DOCTYPE html>
 <html><head><meta charset="utf-8"><style>{{ css }}</style></head>
 <body>
+
 <div class="header">
-  <div class="practice">Cumberland Orthopedics &amp; Sports Medicine</div>
-  <div class="addr">{{ chart.location_name }} &middot; {{ chart.location_address }}</div>
-  <div class="patient-name">{{ chart.patient.legal_name }}</div>
-  <div class="idline">
-    <span>DOB: {{ chart.patient.date_of_birth.strftime('%m/%d/%Y') }}</span>
-    <span>Sex: {{ chart.patient.sex }}</span>
-    <span>MRN: {{ chart.patient.mrn }}</span>
-    <span>PMS ID: {{ chart.patient.pms_id }}</span>
-    {% if chart.patient.phone_home %}<span>Home: {{ chart.patient.phone_home }}</span>{% endif %}
+  <div class="practice">Cumberland Orthopedics</div>
+  <div class="speciality">ORTHOPEDIC &amp; SPORTS MEDICINE</div>
+  <div class="visit">Visit Note - {{ enc.encounter_date.strftime('%B') }} {{ enc.encounter_date.day }}, {{ enc.encounter_date.year }}</div>
+  <div class="who">
+    <div class="name">{{ chart.patient.legal_name }}</div>
+    <table class="ids">
+      <tr class="labels">
+        <td>PMS ID:</td><td>Sex:</td><td>DOB:</td>{% if chart.patient.phone_home %}<td>Phone:</td>{% endif %}<td>MRN:</td>
+      </tr>
+      <tr class="values">
+        <td>{{ chart.patient.pms_id }}</td>
+        <td>{{ chart.patient.sex }}</td>
+        <td>{{ chart.patient.date_of_birth.strftime('%m/%d/%Y') }}</td>
+        {% if chart.patient.phone_home %}<td>{{ chart.patient.phone_home }}</td>{% endif %}
+        <td>{{ chart.patient.mrn }}</td>
+      </tr>
+    </table>
   </div>
-  <div class="idline"><span>Date of Service: {{ enc.encounter_date.strftime('%m/%d/%Y') }}</span>
-    <span>Provider: {{ enc.provider_name }}, {{ enc.provider_role }}</span></div>
 </div>
 
-<div class="sidebar">
-  <h3>Current Medications</h3>
-  <ul>
-  {% for m in enc.current_medications %}<li>{{ m.medication_name }}{% if m.route %} — {{ m.route }}{% endif %}</li>
-  {% else %}<li>None recorded</li>{% endfor %}
-  </ul>
-  <h3>Allergies</h3><ul><li>No Known Drug Allergies</li></ul>
-  <h3>Location</h3><ul><li>{{ chart.location_name }}</li></ul>
+{#- The rail carries longitudinal context that is true of the patient, and the
+    medication list, which is true only as of this visit. -#}
+<div class="rail">
+  <h3>Medications</h3>
+  {% for m in enc.current_medications %}<div>{{ m.medication_name }}{% if m.route %} {{ m.route }}{% endif %}</div>
+  {% else %}<div>None</div>{% endfor %}
+
+  <h3>Medical History</h3>
+  {% for item in chart.patient.history.medical %}<div>{{ item }}</div>{% else %}<div>None</div>{% endfor %}
+
+  <h3>Musculoskeletal History</h3>
+  {% for item in chart.patient.history.musculoskeletal %}<div>{{ item }}</div>{% else %}<div>None</div>{% endfor %}
+
+  <h3>Musculoskeletal Family History</h3>
+  {% for item in chart.patient.history.musculoskeletal_family %}<div>{{ item }}</div>{% else %}<div>None</div>{% endfor %}
+
+  <h3 class="tight">Musculoskeletal Surgery</h3>
+  {% for item in chart.patient.history.musculoskeletal_surgery %}<div>{{ item }}</div>{% else %}<div>None</div>{% endfor %}
+
+  <h3>Surgical History</h3>
+  {% for item in chart.patient.history.surgical %}<div>{{ item }}</div>{% else %}<div>None</div>{% endfor %}
+
+  <h3>Social History</h3>
+  {% for item in chart.patient.history.social %}<div>{{ item }}</div>{% else %}<div>Smoking status - Unspecified</div>{% endfor %}
 </div>
 
-<div class="content">
-  <h2>Chief Complaint</h2>
-  <p>{{ enc.chief_complaint }}</p>
+<h2 class="section tight">Chief Complaints:</h2>
+<p><span class="numbered">1.</span> <span class="indent">{{ enc.chief_complaint }}</span></p>
 
-  <h2>History of Present Illness</h2>
-  <p>{{ enc.hpi_text }}</p>
+<h2 class="section">HPI: {{ hpi_lead }}</h2>
+<p class="indent">{{ enc.hpi_text }}</p>
 
-  {% if enc.vitals %}
-  <h2>Vitals</h2>
-  <table class="vitals">
-    <tr><th>BP</th><th>Pulse</th><th>Resp</th><th>O2 Sat</th><th>Temp</th>
-        <th>Ht (in)</th><th>Wt (lbs)</th><th>BMI</th><th>BSA</th></tr>
-    <tr>
-      <td>{% if enc.vitals.bp_systolic %}{{ enc.vitals.bp_systolic }}/{{ enc.vitals.bp_diastolic }}{% endif %}</td>
-      <td>{{ enc.vitals.pulse or '' }}</td><td>{{ enc.vitals.respirations or '' }}</td>
-      <td>{{ enc.vitals.o2_sat or '' }}</td><td>{{ enc.vitals.temperature_f or '' }}</td>
-      <td>{{ enc.vitals.height_in or '' }}</td><td>{{ enc.vitals.weight_lbs or '' }}</td>
-      <td>{{ enc.vitals.bmi or '' }}</td><td>{{ enc.vitals.bsa or '' }}</td>
-    </tr>
-  </table>
-  {% if enc.vitals.is_patient_reported %}<p>* Patient Reported</p>{% endif %}
-  {% endif %}
+{% if enc.vitals %}
+<h2 class="section">Vitals:</h2>
+<table class="vitals">
+  <tr>
+    <th>Date</th><th>Taken By</th><th>B.P.</th><th>Pulse</th><th>Resp.</th>
+    <th>O2 Sat.</th><th>Temp.</th><th>Ht.</th><th>Wt.</th><th>BMI BSA</th>
+  </tr>
+  <tr>
+    <td>{{ (enc.vitals.taken_date or enc.encounter_date).strftime('%m/%d/%y') }}</td>
+    <td>{{ enc.vitals.taken_by or '' }}</td>
+    <td>{% if enc.vitals.bp_systolic %}{{ enc.vitals.bp_systolic }}/{{ enc.vitals.bp_diastolic }}{% endif %}</td>
+    <td>{{ enc.vitals.pulse or '' }}</td>
+    <td>{{ enc.vitals.respirations or '' }}</td>
+    <td>{{ enc.vitals.o2_sat or '' }}</td>
+    <td>{{ enc.vitals.temperature_f or '' }}</td>
+    <td>{% if enc.vitals.height_in %}{{ enc.vitals.height_in }} in{% endif %}</td>
+    <td>{% if enc.vitals.weight_lbs %}{{ enc.vitals.weight_lbs }}<br>lbs{% endif %}</td>
+    <td>{% if enc.vitals.bmi %}{{ enc.vitals.bmi }} {{ enc.vitals.bsa }}{% endif %}</td>
+  </tr>
+</table>
+{% if enc.vitals.is_patient_reported %}<div class="reported">* Patient Reported</div>{% endif %}
+{% endif %}
 
-  {% if enc.exam_text %}<h2>Physical Exam</h2><p>{{ enc.exam_text }}</p>{% endif %}
-
-  {% if enc.imaging %}
-  <h2>Imaging</h2>
-  {% for im in enc.imaging %}
-  <p><b>{{ im.modality }} {{ im.body_part }}{% if im.laterality %} ({{ im.laterality }}){% endif %}</b>
-     — performed {{ im.performed_date.strftime('%m/%d/%Y') }}<br>
-     {{ im.interpretation_text }}<br>Impression: {{ im.impression }}</p>
-  {% endfor %}
-  {% endif %}
-
-  {% if enc.operative_note %}<h2>Operative Note</h2><p>{{ enc.operative_note }}</p>{% endif %}
-
-  <h2>Assessment</h2>
-  <ul>
-  {% for d in enc.diagnoses %}
-    <li>{{ d.diagnosis_text }}{% if d.icd10_code %} ({{ d.icd10_code }}){% endif %}
-        {%- if d.is_primary %} [Primary]{% endif %}</li>
-  {% endfor %}
-  </ul>
-
-  {% if enc.prescriptions %}
-  <h2>Prescriptions</h2>
-  {% for rx in enc.prescriptions %}
-  <div class="rx">
-    <span class="drug">{{ rx.drug_name }} {{ rx.strength }} {{ rx.strength_unit }} {{ rx.dose_form }}</span>
-    — {{ rx.route }}<br>
-    Sig: {{ rx.sig_text }}<br>
-    Quantity: {{ rx.quantity }} {{ rx.quantity_unit }} &nbsp; Refills: {{ rx.refills }}
-    &nbsp; Action: {{ rx.action }}
-  </div>
-  {% endfor %}
-  {% endif %}
-
-  <h2>Plan</h2>
-  <p>{{ enc.note_text }}</p>
-  {% if enc.follow_up_raw %}<p>{{ enc.follow_up_raw }}</p>{% endif %}
-
-  {% if enc.signed_by %}
-  <h2>Signature</h2>
-  <p>Electronically signed by {{ enc.signed_by }} on
-     {{ enc.signed_at.strftime('%m/%d/%Y %I:%M %p') }}</p>
-  {% endif %}
+{% if exam %}
+<h2 class="section">Exam:</h2>
+<div class="exam-general">
+  <div>{{ exam.general[0] }}</div>
+  {% for line in exam.general[1:] %}<div>{{ line }}</div>{% endfor %}
+  {% for label, value in exam.neurovascular %}<div>{{ label }} {{ value }}</div>{% endfor %}
 </div>
+<div class="region">{{ exam.region }}</div>
+{% for block in exam.blocks %}
+  {% if block.label in ('Active ROM', 'Passive ROM') %}
+  <table class="exam"><tr>
+    {% for head, lines in block.columns %}
+    <td{% if block.columns|length == 1 %} class="single"{% endif %}>
+      <div class="exam-head">{{ head }}</div>
+      {% for line in lines %}<div>{{ line }}</div>{% endfor %}
+    </td>
+    {% endfor %}
+  </tr></table>
+  {% else %}
+  <table class="exam"><tr>
+    {% for head, lines in block.columns %}
+    <td{% if block.columns|length == 1 %} class="single"{% endif %}>
+      <div class="exam-label">{{ block.label }}</div>
+      {% for line in lines %}<div>{{ line }}</div>{% endfor %}
+    </td>
+    {% endfor %}
+  </tr></table>
+  {% endif %}
+{% endfor %}
+{% endif %}
+
+{% if enc.imaging %}
+<h2 class="section">Tests</h2>
+{% for im in enc.imaging %}
+<div class="study">
+  <div class="label">{{ im.modality_label }} Interpretation {{ im.body_part | title }}</div>
+  {% if im.coded_diagnosis_line %}<div>Diagnosis: {{ im.coded_diagnosis_line }}</div>{% endif %}
+  <div>{{ im.modality_label }} Data:</div>
+  <div>Date:&nbsp; {{ (im.performed_date or enc.encounter_date).strftime('%m/%d/%Y') }}</div>
+  {% if im.films %}<div>{{ im.films }}</div>{% endif %}
+  <div>{{ im.interpretation_text }}</div>
+  {% if im.impression %}<div>Impression: {{ im.impression }}</div>{% endif %}
+</div>
+{% endfor %}
+{% endif %}
+
+{% if enc.operative_note %}
+<h2 class="section">Operative Note</h2>
+{% if enc.procedure_name %}<div>Procedure: {{ enc.procedure_name }}</div>{% endif %}
+{% if enc.procedure_date %}<div>Date:&nbsp; {{ enc.procedure_date.strftime('%m/%d/%Y') }}</div>{% endif %}
+{% if enc.surgeon %}<div>Surgeon: {{ enc.surgeon }}</div>{% endif %}
+<p>{{ enc.operative_note }}</p>
+{% endif %}
+
+<h2 class="section">Impression/Plan:</h2>
+{#- The enumerator and the problem title share a line, as the source EMR
+    prints them; the coded diagnosis is the line beneath. -#}
+<div class="problemline"><span class="numbered">1.</span><span class="problem">{{ enc.problem_title or enc.diagnoses[0].diagnosis_text }}</span></div>
+{% for d in enc.diagnoses %}
+  {% if loop.first %}
+  <div class="coded">{{ d.diagnosis_text }}{% if d.icd10_code %} ({{ d.icd10_code }}){% endif %}</div>
+  {% else %}
+  <div class="coded">Associated diagnosis: {{ d.diagnosis_text }}{% if d.icd10_code %} ({{ d.icd10_code }}){% endif %}</div>
+  {% endif %}
+{% endfor %}
+
+{% for rx in enc.prescriptions %}
+<div class="planline">Plan: Prescription.</div>
+<div class="drug">{{ rx.drug_name }} {{ rx.strength }} {{ rx.strength_unit }} {{ rx.dose_form }}{% if rx.route %} {{ rx.route }}{% endif %}</div>
+<div class="sig">Sig: {{ rx.sig_text }}</div>
+<div class="sig">Quantity: {{ rx.quantity | int }} {{ rx.quantity_unit or 'Tablet' }} Refills: {{ rx.refills }}</div>
+{% endfor %}
+{% for line in enc.plan_lines %}
+<div class="planline">Plan: {{ line }}</div>
+{% endfor %}
+
+{% if enc.follow_up_raw %}<h2 class="section">{{ enc.follow_up_raw }}</h2>{% endif %}
+
+{% if enc.note_text %}
+<h2 class="section">Note:</h2>
+<p>{{ enc.note_text }}</p>
+{% endif %}
+
+<h2 class="section">Staff:</h2>
+<p>{{ enc.provider_name }}, {{ enc.provider_role }} {% if enc.is_primary_provider %}(Primary Provider){% endif %}&nbsp; (Bill Under)</p>
+
+{% if enc.signed_by %}
+<p>Electronically Signed By: {{ enc.signed_by }}, {{ enc.signed_at.strftime('%m/%d/%Y %I:%M %p') }} CDT</p>
+{% endif %}
 
 <div class="footer">
-  <span>{{ chart.patient.legal_name }} &middot; MRN {{ chart.patient.mrn }}
-        &middot; DOS {{ enc.encounter_date.strftime('%m/%d/%Y') }}</span>
-  <span class="pageno" style="float:right"></span>
+  <table class="ftr"><tr>
+    <td class="ftr-left">
+      <div class="provider">{{ enc.provider_name }}, {{ enc.provider_role }} {% if enc.is_primary_provider %}(Primary Provider){% endif %} (Bill Under)</div>
+      <div>{{ chart.practice_phone }} Work</div>
+      <div>{{ chart.practice_fax }} Fax</div>
+    </td>
+    <td class="ftr-site">
+      <div>{{ chart.location_name }}</div>
+      <div>{{ location_address_line1 }}</div>
+      <div>{{ location_address_line2 }}</div>
+    </td>
+  </tr></table>
 </div>
+
 </body></html>
