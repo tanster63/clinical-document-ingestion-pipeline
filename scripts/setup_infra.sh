@@ -34,7 +34,11 @@ AGENT_SA="chart-agent-sa@${GCP_PROJECT_ID}.iam.gserviceaccount.com"
 
 gcloud storage buckets add-iam-policy-binding "gs://${GCS_BUCKET}" \
   --member="serviceAccount:${INGEST_SA}" --role=roles/storage.objectViewer
-for ROLE in roles/bigquery.dataEditor roles/bigquery.jobUser roles/aiplatform.user; do
+# eventarc.eventReceiver and run.invoker are what let the Eventarc trigger
+# deliver an object-finalized event to this service; without both, trigger
+# creation fails with IAM_PERMISSION_DENIED on eventarc.events.receiveEvent.
+for ROLE in roles/bigquery.dataEditor roles/bigquery.jobUser roles/aiplatform.user \
+            roles/eventarc.eventReceiver roles/run.invoker; do
   gcloud projects add-iam-policy-binding "$GCP_PROJECT_ID" \
     --member="serviceAccount:${INGEST_SA}" --role="$ROLE" --condition=None >/dev/null
 done
