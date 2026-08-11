@@ -45,7 +45,7 @@ more of them.
 | §6.1 Eight chart PDFs | Done. `charts/source/` (provided) + `charts/generated/` (7 authored, rendered from `corpus/specs/`). Committed and uploaded to `gs://<project>-charts-raw/incoming/`. |
 | §6.2 Ingestion pipeline | Done and deployed. Cloud Run service `chart-ingest`, Eventarc trigger `chart-ingest-finalized`, idempotent MERGE verified live. |
 | §6.3 Structured dataset | Done. 14 tables + 2 views applied to the live `cumberland` dataset and populated from all eight charts. |
-| §6.4 Query agent | Done and deployed. Cloud Run service `chart-agent`, four tools, guarded SQL, driven through all nine `eval/questions.md` prompts against the live warehouse. |
+| §6.4 Query agent | Done and deployed. Cloud Run service `chart-agent`, four tools, guarded SQL, driven through all nine `eval/questions.md` prompts against the live warehouse — all nine answer correctly and in full. |
 | §6.5 Repository | README, architecture diagram, schema doc, decision log, clean commit history. |
 | §6.6 Demo video | **Not started.** |
 
@@ -67,8 +67,9 @@ more of them.
    than publishing a 0% that measures a missing API key.
 4. **Re-run the agent** through [`eval/questions.md`](eval/questions.md) after
    any change to `INSTRUCTION` or the views. It has been driven through all nine
-   prompts against the live warehouse and answers eight of them correctly and in
-   full; the ninth is gap #2 below. Every expected answer in that file is
+   prompts against the live warehouse and answers all nine correctly and in
+   full; the cost of the open-ended one is gap #2 below. Every expected answer
+   in that file is
    measured from the shipped corpus, so a divergence is a real defect. If an
    answer is ungrounded, fix `INSTRUCTION` in `agent/agent.py` — never hardcode
    an answer.
@@ -159,11 +160,11 @@ non-deterministic crept into the renderer.
 
 1. **34 duplicate `exam_findings` rows** remain from the pre-fix redelivery
    storm. Cosmetic and non-recurring, but the table should read 551/551.
-2. **The agent's open-ended answer stops halfway.** Asked what conditions the
-   clinic treats and how, it reports the ranking, works through the top two, and
-   then asks whether to continue rather than finishing. Every claim it makes is
-   grounded and correct; it is the completeness that is short. The other eight
-   eval prompts answer in full.
+2. **The open-ended question costs 17 tool calls.** It now answers in full —
+   the ranking, then medications, procedures and imaging for each of the top
+   five — but it gets there with three separate queries per condition rather
+   than one grouped query. Correct and slow. A worked example in the
+   instruction, or a `condition_treatments` view, would collapse it.
 3. **`write_document` is not atomic.** Each table merges in its own statement, so
    a mid-document failure can leave it half-written. The run records `failed`
    and a re-ingest converges, but the right fix is to wrap the merges in a single

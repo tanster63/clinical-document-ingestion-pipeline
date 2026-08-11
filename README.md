@@ -121,10 +121,11 @@ so the answer does not depend on whether the classifier ran.
 
 **An open question about the practice.** *"What are the most common conditions
 we treat, and how do we usually treat them?"* → right knee osteoarthritis
-(M17.11, 3 encounters, meloxicam and acetaminophen), right shoulder pain
-(M25.511, 2, meloxicam), severe right hip osteoarthritis (M16.11, 2,
-acetaminophen and celecoxib), lumbar disc herniation (M51.16, 2, methocarbamol,
-gabapentin, tramadol).
+(M17.11, 3 encounters, meloxicam and acetaminophen) and lumbar disc herniation
+(M51.16, 3, methocarbamol, gabapentin, tramadol) tied at the top, then severe
+right hip osteoarthritis (M16.11, 2, acetaminophen and celecoxib), right
+shoulder pain (M25.511, 2, meloxicam), and lateral epicondylitis of the right
+elbow (M77.11, 2, ibuprofen).
 
 **A question spanning more than one table.** *"Which patients on an
 anti-inflammatory had imaging on the same day?"* → 5 encounters. Only Mari

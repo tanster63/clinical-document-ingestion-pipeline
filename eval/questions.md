@@ -64,12 +64,21 @@ wrist 1, cervical spine 1.
 | Code | Condition | Encounters | Treated with |
 | --- | --- | ---: | --- |
 | M17.11 | Primary osteoarthritis of right knee | 3 | meloxicam, acetaminophen |
-| M25.511 | Pain in right shoulder | 2 | meloxicam |
+| M51.16 | Lumbar disc herniation with left radiculopathy | 3 | methocarbamol, gabapentin, tramadol |
 | M16.11 | Severe right hip osteoarthritis | 2 | acetaminophen, celecoxib |
-| M51.16 | Lumbar disc herniation with left radiculopathy | 2 | methocarbamol, gabapentin, tramadol |
+| M25.511 | Pain in right shoulder | 2 | meloxicam |
+| M77.11 | Lateral epicondylitis, right elbow | 2 | ibuprofen |
+
+M17.11 and M51.16 tie at three encounters, so either may come first; the three
+at two are likewise interchangeable. The remaining three codes (M50.122, M65.4,
+M72.2) have one encounter each.
 
 Group by the code, never by the free-text description: the same condition is
 phrased differently between visits and grouping on text splits it in two.
+M77.11 is exactly that case — "Lateral epicondylitis, right elbow" at one visit
+and the same phrase plus ", improving" at the next — which is why an earlier
+version of this table, grouped with the description carried along, showed it
+nowhere and showed M51.16 at two.
 
 ---
 
