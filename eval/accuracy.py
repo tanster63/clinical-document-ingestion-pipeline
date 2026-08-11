@@ -277,6 +277,7 @@ def evaluate_corpus(
     spec_dir: Path = Path("corpus/specs"),
     pdf_dir: Path = Path("charts/generated"),
     include_llm: bool = False,
+    llm_client=None,
 ) -> dict[str, FieldResult]:
     """Score the seven synthetic charts."""
     totals: dict[str, FieldResult] = {}
@@ -288,7 +289,8 @@ def evaluate_corpus(
                 f"{pdf_path} is missing; run "
                 f"`python -m corpus.render corpus/specs/*.json --out {pdf_dir}`"
             )
-        doc = extract_document(pdf_path.read_bytes(), file_name=pdf_path.name, cfg=cfg)
+        doc = extract_document(pdf_path.read_bytes(), file_name=pdf_path.name, cfg=cfg,
+                               llm_client=llm_client)
         _merge(totals, compare_document(doc, spec, include_llm=include_llm))
     return totals
 
@@ -298,12 +300,14 @@ def evaluate_sample(
     sample_truth: Path = Path("corpus/sample_truth.json"),
     sample_pdf: Path | None = None,
     include_llm: bool = False,
+    llm_client=None,
 ) -> dict[str, FieldResult]:
     """Score the provided chart — the only one this project did not generate."""
     if sample_pdf is None or not sample_pdf.exists() or not sample_truth.exists():
         return {}
     truth = ChartSpec.model_validate(json.loads(sample_truth.read_text()))
-    doc = extract_document(sample_pdf.read_bytes(), file_name=sample_pdf.name, cfg=cfg)
+    doc = extract_document(sample_pdf.read_bytes(), file_name=sample_pdf.name, cfg=cfg,
+                           llm_client=llm_client)
     totals: dict[str, FieldResult] = {}
     _merge(totals, compare_document(doc, truth, include_llm=include_llm))
     return totals
@@ -434,15 +438,32 @@ def main() -> None:
     import os
     import sys
 
-    cfg = LOCAL_CONFIG
     include_llm = "--llm" in sys.argv
+    # LOCAL_CONFIG names project "local", so the Vertex client built from it
+    # cannot resolve. classify_encounter catches that like any other failure and
+    # returns None, which scores as a miss -- so `--llm` against LOCAL_CONFIG
+    # publishes a 0% that measures the configuration, not the model. That is the
+    # exact number this report says it refuses to print. Scoring the four
+    # model-derived columns requires the real credentials; load_config raises and
+    # names the missing variables if they are not set.
+    llm_client = None
+    if include_llm:
+        from ingestion.config import load_config
+        from ingestion.extract.llm import build_client
+        cfg = load_config()
+        # extract_document only classifies when it is handed a client. Without
+        # this, --llm scored four columns that were never populated.
+        llm_client = build_client(cfg)
+    else:
+        cfg = LOCAL_CONFIG
     sample_path = os.environ.get(
         "SAMPLE_CHART_PATH",
         "charts/source/EMA_20250723T140400_0000_MRN4820917_PMS4820917"
         "_PID18442091_PatientChart_400112.pdf",
     )
-    corpus = evaluate_corpus(cfg, include_llm=include_llm)
-    sample = evaluate_sample(cfg, sample_pdf=Path(sample_path), include_llm=include_llm)
+    corpus = evaluate_corpus(cfg, include_llm=include_llm, llm_client=llm_client)
+    sample = evaluate_sample(cfg, sample_pdf=Path(sample_path), include_llm=include_llm,
+                             llm_client=llm_client)
     report = render_report(corpus, sample, llm_scored=include_llm) + "\n" + HONEST_NOTE
     Path("eval/report.md").write_text(report)
     print(report)
