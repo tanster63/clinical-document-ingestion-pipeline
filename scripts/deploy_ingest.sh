@@ -54,5 +54,21 @@ else
     --service-account "${INGEST_SA}"
 fi
 
+# Eventarc creates its Pub/Sub push subscription with a 10s ack deadline, but a
+# chart takes minutes to ingest (Gemini calls dominate). Pub/Sub then redelivers
+# while the first attempt is still running, so the same object ingests several
+# times concurrently -- and two MERGEs that each see a key absent under snapshot
+# isolation will both insert it. Raising the deadline to the 600s maximum (just
+# above the 540s Cloud Run timeout) is what makes at-least-once delivery behave.
+# Applied unconditionally so re-running repairs an already-created trigger.
+SUBSCRIPTION="$(gcloud eventarc triggers describe "${TRIGGER}" \
+  --project "${GCP_PROJECT_ID}" --location "${REGION}" \
+  --format='value(transport.pubsub.subscription)')"
+if [[ -n "${SUBSCRIPTION}" ]]; then
+  gcloud pubsub subscriptions update "${SUBSCRIPTION}" \
+    --project "${GCP_PROJECT_ID}" --ack-deadline=600 >/dev/null
+  echo "    ack deadline set to 600s on ${SUBSCRIPTION##*/}"
+fi
+
 echo "==> Done. Smoke test:"
 echo "    curl -H \"Authorization: Bearer \$(gcloud auth print-identity-token)\" ${URL}/health"
