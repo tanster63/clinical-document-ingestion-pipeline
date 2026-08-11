@@ -1,9 +1,16 @@
 # Deployment
 
-Everything here runs on Google Cloud's free trial credit. Nothing in this
-repository has been deployed yet — the scripts are written and idempotent, but
-they have not been executed against a live project. Where a step is known to be
-fragile, that is called out rather than smoothed over.
+Everything here runs on Google Cloud's free trial credit. These steps have been
+executed end to end against a live project: all eight charts were ingested by
+the Eventarc path and the warehouse counts below are what came back. Where a
+step is known to be fragile, that is called out rather than smoothed over.
+
+Four defects only surfaced during that first real run, and each is fixed in the
+scripts here rather than described as a workaround: the buildpack builder no
+longer offers Python 3.11; the ingest service account was missing the two roles
+Eventarc delivery requires; `gcloud storage service-agent` pads its output with
+whitespace that IAM then rejects; and Eventarc's Pub/Sub subscription defaults
+to a 10s ack deadline, far under the time a chart takes to ingest.
 
 Total time from a clean project: roughly 30 minutes, most of it waiting for two
 Cloud Build runs.
@@ -141,7 +148,7 @@ URL=$(gcloud run services describe chart-ingest \
         --format='value(status.url)')
 TOKEN=$(gcloud auth print-identity-token)
 
-curl -s -H "Authorization: Bearer $TOKEN" "$URL/healthz"
+curl -s -H "Authorization: Bearer $TOKEN" "$URL/health"
 ```
 
 The service is deployed `--no-allow-unauthenticated`; every call needs that
