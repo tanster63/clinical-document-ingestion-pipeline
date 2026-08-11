@@ -129,3 +129,57 @@ def test_the_package_imports_under_the_name_adk_deploys_it_as(tmp_path, monkeypa
     assert {tool.__name__ for tool in package.root_agent.tools} == {
         "get_schema", "find_patient", "patient_timeline", "run_sql",
     }
+
+
+# --- tool results have to survive JSON serialisation -------------------------
+#
+# ADK serialises every tool result before the model sees it. A BigQuery DATE
+# comes back as datetime.date, which json.dumps refuses, and the failure
+# surfaced as an HTTP 500 from /run -- so three of the nine evaluation
+# questions returned no answer at all, and the ones that worked were the ones
+# that happened to select only counts. Anything reachable from a tool return
+# value has to be JSON-safe.
+
+def test_every_bigquery_type_a_tool_can_return_survives_json():
+    import datetime
+    import decimal
+    import json
+
+    from agent.tools import _jsonable
+
+    row = {
+        "encounter_date": datetime.date(2025, 7, 23),
+        "ingested_at": datetime.datetime(2025, 7, 23, 14, 4, tzinfo=datetime.timezone.utc),
+        "appointment_time": datetime.time(14, 4),
+        "confidence": decimal.Decimal("0.75"),
+        "blob": b"bytes",
+        "mrn": "4820917",
+        "missing": None,
+        # Repeated STRUCT columns are how v_patient_timeline returns
+        # diagnoses and prescriptions, so the coercion has to recurse.
+        "diagnoses": [{"coded_on": datetime.date(2025, 7, 23), "icd10_code": "M25.511"}],
+    }
+
+    safe = _jsonable(row)
+    json.dumps(safe)  # the assertion: this raised TypeError before
+
+    assert safe["encounter_date"] == "2025-07-23"
+    assert safe["diagnoses"][0]["coded_on"] == "2025-07-23"
+    assert safe["confidence"] == 0.75
+    assert safe["mrn"] == "4820917" and safe["missing"] is None
+
+
+def test_the_instruction_sends_comorbidities_to_patient_history(agent_module):
+    """Hypertension is left-rail history in an orthopedic clinic, never a
+    diagnosis. Without this the agent queries `diagnoses` and reports zero."""
+    instruction = agent_module.INSTRUCTION.lower()
+    assert "hypertension" in instruction
+    assert "patient_history" in instruction
+
+
+def test_the_instruction_warns_that_string_matching_is_case_sensitive(agent_module):
+    """`body_region_effective = 'Knee'` returns zero rows against a warehouse
+    that stores 'knee', and a wrong zero reads exactly like a right one."""
+    instruction = agent_module.INSTRUCTION
+    assert "LOWER(" in instruction
+    assert "case-sensitive" in instruction.lower()

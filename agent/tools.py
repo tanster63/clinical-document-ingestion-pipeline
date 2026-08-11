@@ -9,6 +9,8 @@ guarded four ways before anything executes: statement-type allowlist, single
 statement only, dataset and view scoping, and a dry-run byte cap.
 """
 
+import datetime
+import decimal
 import re
 
 from google.cloud import bigquery
@@ -109,8 +111,34 @@ def _client_and_cfg():
     return bigquery.Client(project=cfg.project_id), cfg
 
 
+def _jsonable(value):
+    """Coerce a BigQuery value into something json.dumps accepts.
+
+    ADK serialises every tool result to JSON before handing it back to the
+    model, and the client returns DATE/TIMESTAMP as datetime objects and
+    NUMERIC as Decimal. Any tool that touched a date column -- which is every
+    question about a specific patient -- died with
+    `TypeError: Object of type date is not JSON serializable` and surfaced as
+    an HTTP 500, so the model never saw the rows at all.
+
+    Dates become ISO strings rather than epochs because the model reads them:
+    "2025-07-23" is a date it can compare and quote back, 1753228800 is not.
+    """
+    if isinstance(value, (datetime.datetime, datetime.date, datetime.time)):
+        return value.isoformat()
+    if isinstance(value, decimal.Decimal):
+        return float(value)
+    if isinstance(value, bytes):
+        return value.decode("utf-8", "replace")
+    if isinstance(value, dict):
+        return {k: _jsonable(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_jsonable(v) for v in value]
+    return value
+
+
 def _rows(job) -> list[dict]:
-    return [dict(row) for row in job.result()]
+    return [_jsonable(dict(row)) for row in job.result()]
 
 
 def _describe(field) -> dict:
