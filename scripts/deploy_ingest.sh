@@ -35,7 +35,10 @@ if gcloud eventarc triggers describe "${TRIGGER}" \
 else
   # GCS publishes through Pub/Sub; its service agent needs the publisher role
   # once per project or trigger creation fails with PERMISSION_DENIED.
-  STORAGE_AGENT="$(gcloud storage service-agent --project="${GCP_PROJECT_ID}")"
+  # `gcloud storage service-agent` pads its output with a leading blank line and
+  # indentation; unstripped, that whitespace lands inside the "serviceAccount:"
+  # member string and IAM rejects it as a non-existent account.
+  STORAGE_AGENT="$(gcloud storage service-agent --project="${GCP_PROJECT_ID}" | tr -d '[:space:]')"
   gcloud projects add-iam-policy-binding "${GCP_PROJECT_ID}" \
     --member="serviceAccount:${STORAGE_AGENT}" \
     --role="roles/pubsub.publisher" --condition=None >/dev/null
@@ -52,4 +55,4 @@ else
 fi
 
 echo "==> Done. Smoke test:"
-echo "    curl -H \"Authorization: Bearer \$(gcloud auth print-identity-token)\" ${URL}/healthz"
+echo "    curl -H \"Authorization: Bearer \$(gcloud auth print-identity-token)\" ${URL}/health"
