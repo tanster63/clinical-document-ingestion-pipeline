@@ -192,3 +192,19 @@ def test_the_instruction_forbids_carrying_the_description_into_the_group_by(agen
     instruction = agent_module.INSTRUCTION
     assert "ANY_VALUE(primary_diagnosis)" in instruction
     assert "GROUP BY" in instruction
+
+
+def test_the_instruction_treats_a_sql_error_as_recoverable(agent_module):
+    """A failed query is BigQuery rejecting the SQL, not the warehouse saying
+    the answer does not exist. The agent abandoned half of the open-ended
+    question after one error and told the reader it could not be determined --
+    a far stronger claim than the one the evidence supported."""
+    # The instruction is hard-wrapped, so match against it with runs of
+    # whitespace collapsed rather than pinning the assertion to a line break.
+    instruction = " ".join(agent_module.INSTRUCTION.split())
+    assert 'status "error"' in instruction
+    assert "Never end your answer at a failed query." in instruction
+
+
+def test_the_instruction_requires_both_halves_of_a_two_part_question(agent_module):
+    assert "Answer the whole question." in " ".join(agent_module.INSTRUCTION.split())
