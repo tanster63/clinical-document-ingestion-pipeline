@@ -29,12 +29,13 @@ charts afterwards produced exactly eight ingest runs and changed no row count in
 any table, which is idempotency demonstrated against the service rather than
 asserted.
 
-One blemish remains, and it is cosmetic rather than structural: `exam_findings`
-holds 585 rows against 551 distinct `finding_id`. Those 34 duplicates are
-byte-identical rows left over from a redelivery storm that happened before the
-ack deadline was fixed (see the deploy script). `MERGE` converges but never
-deletes, so they need a one-time cleanup; nothing in the pipeline will produce
-more of them.
+One blemish is worth recording because of what it taught rather than because it
+survives: `exam_findings` held 585 rows against 551 distinct `finding_id` — 34
+byte-identical duplicates left by a redelivery storm from before the Eventarc
+ack deadline was raised (see the deploy script). `MERGE` converges but never
+deletes, so they sat there. They have since been removed and the table reads
+551/551, which is what `scripts/run_local.py` produces locally. Nothing in the
+pipeline can create more of them; the ack deadline is the actual fix.
 
 ---
 
@@ -53,11 +54,9 @@ more of them.
 
 ## What to do first
 
-1. **Clean up the 34 duplicate `exam_findings` rows** left by the pre-fix
-   redelivery storm, so the table reads 551/551. A `SELECT DISTINCT` into the
-   table inside a transaction is enough; the rows are byte-identical.
-   Redeploying is already done — [DEPLOYMENT.md](DEPLOYMENT.md) has been run end
-   to end and the four defects it exposed are fixed in the scripts.
+1. **Nothing, to get it running.** [DEPLOYMENT.md](DEPLOYMENT.md) has been run
+   end to end, the four defects it exposed are fixed in the scripts, and both
+   services are live. The list below is what to do to keep it honest.
 2. **Run the live test.** `RUN_LIVE_TESTS=1 pytest tests/test_warehouse_live.py`.
    This is the only thing that can prove idempotency against BigQuery itself —
    load-job visibility to `MERGE` is a property of the service, not of this code.
@@ -68,9 +67,9 @@ more of them.
 4. **Re-run the agent** through [`eval/questions.md`](eval/questions.md) after
    any change to `INSTRUCTION` or the views. It has been driven through all nine
    prompts against the live warehouse and answers all nine correctly and in
-   full; the cost of the open-ended one is gap #2 below. Every expected answer
-   in that file is
-   measured from the shipped corpus, so a divergence is a real defect. If an
+   full; the cost of the open-ended one is gap #1 below. Every expected answer
+   in that file is measured from the shipped corpus, so a divergence is a real
+   defect. If an
    answer is ungrounded, fix `INSTRUCTION` in `agent/agent.py` — never hardcode
    an answer.
 5. **Record the video.** Notes below.
@@ -158,23 +157,21 @@ non-deterministic crept into the renderer.
 
 ## Known gaps, in the order I would fix them
 
-1. **34 duplicate `exam_findings` rows** remain from the pre-fix redelivery
-   storm. Cosmetic and non-recurring, but the table should read 551/551.
-2. **The open-ended question costs 17 tool calls.** It now answers in full —
+1. **The open-ended question costs 17 tool calls.** It now answers in full —
    the ranking, then medications, procedures and imaging for each of the top
    five — but it gets there with three separate queries per condition rather
    than one grouped query. Correct and slow. A worked example in the
    instruction, or a `condition_treatments` view, would collapse it.
-3. **`write_document` is not atomic.** Each table merges in its own statement, so
+2. **`write_document` is not atomic.** Each table merges in its own statement, so
    a mid-document failure can leave it half-written. The run records `failed`
    and a re-ingest converges, but the right fix is to wrap the merges in a single
    BigQuery transaction.
-4. **`icd10_description` is the chart's wording, not a canonical label.** Group
+3. **`icd10_description` is the chart's wording, not a canonical label.** Group
    conditions by `icd10_code`. A seeded `ref_icd10` table would fix it, in the
    same shape as `ref_drug_class`.
-5. **The exam's `narrative` finding type is an admission**, not a design: prose
+4. **The exam's `narrative` finding type is an admission**, not a design: prose
    exams are stored as sentences because they are not structured data.
-6. **Scanned charts are out of scope.** Every chart here is real text. The moment
+5. **Scanned charts are out of scope.** Every chart here is real text. The moment
    one arrives as an image, this becomes a Document AI problem — see the
    technology-choices table in the README.
 
