@@ -141,3 +141,35 @@ def test_an_encounter_with_no_rows_in_a_child_table_gets_an_empty_array(live):
     ).result()))
     assert row["null_count"] == 0
     assert row["empty_count"] > 0, "expected some encounters with no procedures"
+
+
+def test_run_sql_resolves_a_bare_view_name(live):
+    """The model writes `FROM v_encounter_summary`, because that is the name
+    get_schema hands it. Without a default dataset BigQuery rejected every such
+    query, so each aggregate question burned a failed round trip before the
+    agent retried with the dataset spelled out."""
+    from agent.tools import run_sql
+    result = run_sql("SELECT COUNT(*) AS n FROM v_encounter_summary")
+    assert result["status"] == "ok", result.get("reason")
+    assert result["rows"][0]["n"] > 0
+
+
+def test_grouping_conditions_on_free_text_splits_a_real_condition(live):
+    """Guards the rule in INSTRUCTION with the case that broke it: M77.11 is
+    worded two ways across its two encounters, so a GROUP BY that carries the
+    description reports it as two one-visit conditions instead of one seen
+    twice -- which is what the agent did before the rule spelled this out."""
+    cfg, client = live
+    summary = cfg.table("v_encounter_summary")
+
+    by_code = {row["primary_icd10_code"]: row["n"] for row in client.query(
+        f"SELECT primary_icd10_code, COUNT(*) AS n FROM `{summary}` "
+        "WHERE primary_icd10_code IS NOT NULL GROUP BY 1"
+    ).result()}
+    assert by_code["M77.11"] == 2
+
+    split = [row["n"] for row in client.query(
+        f"SELECT COUNT(*) AS n FROM `{summary}` WHERE primary_icd10_code = 'M77.11' "
+        "GROUP BY primary_icd10_code, primary_diagnosis"
+    ).result()]
+    assert split == [1, 1], "the free-text split is the failure this rule prevents"

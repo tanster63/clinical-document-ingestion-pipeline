@@ -251,10 +251,19 @@ def run_sql(query: str) -> dict:
         return {"status": "refused", "reason": str(exc), "rows": []}
 
     client = bigquery.Client(project=cfg.project_id)
+    # Resolve bare view names against the clinical dataset. The model writes
+    # `FROM v_encounter_summary` because that is the name get_schema reports,
+    # and without a default dataset BigQuery answered every such query with
+    # "must be qualified with a dataset" -- so each aggregate question cost a
+    # failed round trip before the retry. The guard already refuses any
+    # unqualified name that is not a documented view, so this widens nothing.
+    dataset = bigquery.DatasetReference(cfg.project_id, cfg.dataset)
     try:
         dry_run = client.query(
             safe_query,
-            job_config=bigquery.QueryJobConfig(dry_run=True, use_query_cache=False),
+            job_config=bigquery.QueryJobConfig(
+                dry_run=True, use_query_cache=False, default_dataset=dataset
+            ),
         )
     except Exception as exc:
         return {"status": "error", "reason": f"{type(exc).__name__}: {exc}",
@@ -269,7 +278,9 @@ def run_sql(query: str) -> dict:
         }
 
     try:
-        rows = _rows(client.query(safe_query))
+        rows = _rows(client.query(
+            safe_query, job_config=bigquery.QueryJobConfig(default_dataset=dataset)
+        ))
     except Exception as exc:
         return {"status": "error", "reason": f"{type(exc).__name__}: {exc}",
                 "sql": safe_query, "rows": []}

@@ -55,7 +55,13 @@ You answer questions about an orthopedic clinical warehouse built from chart PDF
   NULL whenever the classifier was not run.
 - Group conditions by primary_icd10_code, never by the free-text description:
   the same condition is worded differently between visits and grouping on text
-  splits one condition into several.
+  splits one condition into several. This includes SELECTing the description
+  next to the code, which forces it into the GROUP BY and splits the count just
+  as surely. If you want a readable label, wrap it: ANY_VALUE(primary_diagnosis).
+  M77.11 is recorded once as "Lateral epicondylitis, right elbow" and once as
+  the same phrase plus ", improving" — grouped on text that is two conditions of
+  one visit each, grouped on the code it is one condition seen twice, which
+  changes where it ranks.
 - "On an anti-inflammatory" has two readings and the warehouse answers both:
   anti_inflammatory_on_arrival (already taking one) and
   anti_inflammatory_prescribed (prescribed one at that visit), with

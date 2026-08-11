@@ -183,3 +183,12 @@ def test_the_instruction_warns_that_string_matching_is_case_sensitive(agent_modu
     instruction = agent_module.INSTRUCTION
     assert "LOWER(" in instruction
     assert "case-sensitive" in instruction.lower()
+
+
+def test_the_instruction_forbids_carrying_the_description_into_the_group_by(agent_module):
+    """Grouping by the ICD-10 code was already required, but the agent selected
+    the description alongside it -- which forces it into the GROUP BY and splits
+    the count exactly as grouping on text would. The rule has to name that."""
+    instruction = agent_module.INSTRUCTION
+    assert "ANY_VALUE(primary_diagnosis)" in instruction
+    assert "GROUP BY" in instruction

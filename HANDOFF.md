@@ -15,7 +15,7 @@ brief disagree, the brief wins.
 ## State in one paragraph
 
 The pipeline is complete and verified locally: eight chart PDFs extract into a
-fourteen-table BigQuery schema with zero errors, 307 tests pass, extraction
+fourteen-table BigQuery schema with zero errors, 321 tests pass, extraction
 accuracy is 100% on the authored corpus and 90.2% on the provided chart, and
 re-ingesting is idempotent under both a verbatim re-run and a re-export under
 different file names.
@@ -45,7 +45,7 @@ more of them.
 | §6.1 Eight chart PDFs | Done. `charts/source/` (provided) + `charts/generated/` (7 authored, rendered from `corpus/specs/`). Committed and uploaded to `gs://<project>-charts-raw/incoming/`. |
 | §6.2 Ingestion pipeline | Done and deployed. Cloud Run service `chart-ingest`, Eventarc trigger `chart-ingest-finalized`, idempotent MERGE verified live. |
 | §6.3 Structured dataset | Done. 14 tables + 2 views applied to the live `cumberland` dataset and populated from all eight charts. |
-| §6.4 Query agent | Code complete (`agent/`). Four tools, guarded SQL. Never run against a live warehouse. |
+| §6.4 Query agent | Done and deployed. Cloud Run service `chart-agent`, four tools, guarded SQL, driven through all nine `eval/questions.md` prompts against the live warehouse. |
 | §6.5 Repository | README, architecture diagram, schema doc, decision log, clean commit history. |
 | §6.6 Demo video | **Not started.** |
 
@@ -65,10 +65,13 @@ more of them.
 3. **Score the LLM columns.** `python -m eval.accuracy --llm` with credentials.
    The committed report deliberately leaves those four columns unscored rather
    than publishing a 0% that measures a missing API key.
-4. **Run the agent** through [`eval/questions.md`](eval/questions.md). Every
-   expected answer there is measured from the shipped corpus, so a divergence is
-   a real defect. If an answer is ungrounded, fix `INSTRUCTION` in
-   `agent/agent.py` — never hardcode an answer.
+4. **Re-run the agent** through [`eval/questions.md`](eval/questions.md) after
+   any change to `INSTRUCTION` or the views. It has been driven through all nine
+   prompts against the live warehouse and answers eight of them correctly and in
+   full; the ninth is gap #2 below. Every expected answer in that file is
+   measured from the shipped corpus, so a divergence is a real defect. If an
+   answer is ungrounded, fix `INSTRUCTION` in `agent/agent.py` — never hardcode
+   an answer.
 5. **Record the video.** Notes below.
 
 ---
@@ -95,7 +98,7 @@ corpus/             chart authoring: specs -> exam template -> Jinja/WeasyPrint
 sql/ddl/            the warehouse definition; the single source of truth
 eval/               measured accuracy + the four brief questions
 scripts/            infra, DDL, deploys, and a local end-to-end run
-tests/              307 tests
+tests/              321 tests
 ```
 
 **Start reading at** `ingestion/extract/pipeline.py`. It is the spine and it
@@ -134,6 +137,18 @@ re-run `python -m eval.accuracy`; the corpus is scored against the specs it was
 rendered from, and a template change usually breaks a parser before it breaks a
 test.
 
+**A view can be created, described, committed — and be unreadable.** `CREATE
+VIEW` validates the SQL without running it, so `v_patient_timeline` shipped with
+correlated `ARRAY(SELECT ... WHERE child.encounter_id = e.encounter_id)`
+subqueries that BigQuery refuses at *query* time: "Correlated subqueries that
+reference other tables are not supported unless they can be de-correlated". Even
+`SELECT *` failed. Nothing caught it because no test had ever read from a view —
+`tests/test_warehouse_live.py` now selects from every view in `ALLOWED_VIEWS`,
+and that is the test to keep. Build nested arrays with `ARRAY_AGG` in a CTE and
+`LEFT JOIN` them, then `IFNULL(x, [])`: a correlated subquery returns an empty
+array for a childless parent, a `LEFT JOIN` returns NULL, and callers were
+written against the empty array.
+
 **Re-render is byte-deterministic.** An unchanged spec produces an identical
 PDF. If `git status` shows a chart changed and you did not mean it to, something
 non-deterministic crept into the renderer.
@@ -144,8 +159,11 @@ non-deterministic crept into the renderer.
 
 1. **34 duplicate `exam_findings` rows** remain from the pre-fix redelivery
    storm. Cosmetic and non-recurring, but the table should read 551/551.
-2. **No agent transcript exists.** The answers in `eval/questions.md` are
-   computed from the warehouse, not recorded from a model turn.
+2. **The agent's open-ended answer stops halfway.** Asked what conditions the
+   clinic treats and how, it reports the ranking, works through the top two, and
+   then asks whether to continue rather than finishing. Every claim it makes is
+   grounded and correct; it is the completeness that is short. The other eight
+   eval prompts answer in full.
 3. **`write_document` is not atomic.** Each table merges in its own statement, so
    a mid-document failure can leave it half-written. The run records `failed`
    and a re-ingest converges, but the right fix is to wrap the merges in a single
