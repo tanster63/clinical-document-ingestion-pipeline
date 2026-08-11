@@ -99,6 +99,16 @@ Verify:
 bq ls "$GCP_PROJECT_ID:$BQ_DATASET"          # expect 14 tables + 2 views
 bq query --use_legacy_sql=false \
   "SELECT COUNT(*) AS drugs FROM \`$GCP_PROJECT_ID.$BQ_DATASET.ref_drug_class\`"
+
+# Read from each view, not just list it. CREATE VIEW validates the SQL without
+# running it, so a view that cannot be queried still creates, describes and
+# lists cleanly -- v_patient_timeline shipped that way once. Use --format=json:
+# csv cannot render the nested arrays and errors out on a view that is fine.
+for v in v_encounter_summary v_patient_timeline; do
+  bq query --use_legacy_sql=false --format=json --max_rows=1 \
+    "SELECT * FROM \`$GCP_PROJECT_ID.$BQ_DATASET.$v\`" > /dev/null \
+    && echo "$v readable" || echo "$v FAILED"
+done
 ```
 
 Re-running `apply_ddl.sh` after a schema change is safe for new tables and new

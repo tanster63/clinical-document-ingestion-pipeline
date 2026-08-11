@@ -85,6 +85,10 @@ def test_the_views_answer_the_brief_s_cross_table_question(live):
 
 
 def test_no_staging_tables_are_left_behind(live):
+    """Run this suite one process at a time. Staging tables are named with a
+    random suffix and dropped by whichever run created them, so a second run
+    ingesting concurrently will be caught mid-flight here and reported as a
+    leak that is not one -- the table is gone a moment later."""
     cfg, client = live
     leftover = [t.table_id for t in client.list_tables(cfg.dataset_ref)
                 if t.table_id.startswith("_stg_")]
