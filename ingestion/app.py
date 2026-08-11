@@ -16,7 +16,7 @@ import logging
 import uuid
 from datetime import datetime, timezone
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel
 
 from ingestion.config import Config, load_config
@@ -117,6 +117,11 @@ def ingest_object(
     )
 
 
+# "/health" is the canonical path. Google's frontend reserves the exact path
+# "/healthz" and answers it itself with an HTML 404, so a request to it never
+# reaches this process once deployed behind Cloud Run. "/healthz" stays
+# registered because it still resolves locally and in tests.
+@app.get("/health")
 @app.get("/healthz")
 def healthz() -> dict:
     return {"status": "ok", "pipeline_version": _config().pipeline_version}
@@ -134,11 +139,21 @@ def ingest(request: IngestRequest) -> dict:
 
 
 @app.post("/events")
-def events(envelope: dict) -> dict:
-    """Eventarc receiver. Every path returns 200 — see the module docstring."""
-    data = envelope.get("data") or {}
+def events(envelope: dict, request: Request) -> dict:
+    """Eventarc receiver. Every path returns 200 — see the module docstring.
+
+    Two wire formats reach this endpoint and both must work:
+
+    * structured mode — the CloudEvent is the JSON body, so the type is
+      ``type`` and the object lives under ``data``;
+    * binary mode — which is what Eventarc actually uses for Cloud Storage
+      (it appends ``__GCP_CloudEventsMode=GCS_NOTIFICATION``). The body is the
+      bare storage object resource and the type moves into the ``ce-type``
+      header. Reading only the structured shape silently drops every event.
+    """
+    data = envelope.get("data") or envelope
     object_name = data.get("name")
-    event_type = envelope.get("type")
+    event_type = envelope.get("type") or request.headers.get("ce-type")
 
     if event_type != FINALIZED_EVENT or not object_name:
         log.warning("ignoring event: type=%s object=%s", event_type, object_name)

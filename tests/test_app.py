@@ -66,8 +66,11 @@ def event(name="chart.pdf", event_type="google.cloud.storage.object.v1.finalized
     }
 
 
-def test_healthz(client):
-    response = client.get("/healthz")
+@pytest.mark.parametrize("path", ["/health", "/healthz"])
+def test_healthz(client, path):
+    # "/health" is what the deployed smoke test calls: Google's frontend
+    # intercepts "/healthz" and never forwards it to the container.
+    response = client.get(path)
     assert response.status_code == 200
     assert response.json()["status"] == "ok"
 
@@ -116,6 +119,28 @@ def test_a_warehouse_failure_is_recorded_and_still_returns_200(
     assert response.json()["status"] == "failed"
     assert warehouse.runs[0].status == "failed"
     assert "bigquery unavailable" in warehouse.runs[0].error_detail
+
+
+def test_binary_mode_gcs_notification_is_ingested(sample_pdf_bytes, monkeypatch):
+    """The shape Eventarc actually delivers: bare object body, type in a header.
+
+    Structured-mode coverage alone let this regress into silently skipping
+    every real event while still answering 200.
+    """
+    warehouse = FakeWarehouse()
+    monkeypatch.setattr("ingestion.app._storage_client",
+                        lambda: FakeStorage(sample_pdf_bytes))
+    monkeypatch.setattr("ingestion.app._warehouse", lambda cfg: warehouse)
+    monkeypatch.setattr("ingestion.app._llm_client", lambda cfg: None)
+
+    body = event()["data"]                      # no "data" wrapper, no "type"
+    response = TestClient(app).post(
+        "/events", json=body,
+        headers={"ce-type": "google.cloud.storage.object.v1.finalized"},
+    )
+    assert response.status_code == 200
+    assert response.json()["status"] != "skipped"
+    assert warehouse.written, "binary-mode event should have reached the warehouse"
 
 
 def test_non_pdf_objects_are_acknowledged_and_skipped(client):
