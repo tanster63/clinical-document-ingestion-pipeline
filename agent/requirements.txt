@@ -1,3 +1,9 @@
 google-adk==1.2.1
 google-cloud-bigquery==3.27.0
-pydantic==2.10.4
+# >=2.11.1 is not a preference: google-adk pulls
+# google-cloud-aiplatform[agent-engines], and every release of that extra in the
+# permitted range requires it. Pinning 2.10.4 here did not fail fast -- pip
+# backtracked through ~70 aiplatform versions downloading metadata and the
+# Cloud Build hit its 1800s timeout still searching. Kept in step with the root
+# requirements.txt so the agent and the ingest service share one pydantic.
+pydantic==2.13.4
