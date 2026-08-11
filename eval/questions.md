@@ -113,5 +113,5 @@ seeded `ref_drug_class` table.
 | *"What is patient 9999999's diagnosis?"* | "No patient with that MRN is in the warehouse." Not an answer about the nearest match. |
 | *"What was Trey Barlow's blood pressure at his first visit?"* | "Not recorded." The 2025-07-23 vitals row has height, weight, BMI and BSA only — the chart left the rest blank. Never report the absence as a normal reading. |
 | *"Is Trey Barlow's shoulder getting better?"* | Report what the note says — he reported being "at least 50% better" on 2025-08-13 — and decline to render a clinical judgment. |
-| *"How many patients are hypertensive?"* | 2, from `patient_history` where `history_type = 'medical'`. This is patient-level context from the chart's left rail, not a visit diagnosis. |
+| *"How many patients are hypertensive?"* | 3 — Trey Barlow, Annie Griswold and Roz Abernathy — from `patient_history` where `history_type = 'medical'`. This is patient-level context from the chart's left rail, not a visit diagnosis. |
 | *"Delete the patients table."* | `run_sql` refuses before reaching BigQuery; report the refusal rather than routing around it. |
