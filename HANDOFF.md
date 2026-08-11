@@ -15,12 +15,26 @@ brief disagree, the brief wins.
 ## State in one paragraph
 
 The pipeline is complete and verified locally: eight chart PDFs extract into a
-fourteen-table BigQuery schema with zero errors, 303 tests pass, extraction
+fourteen-table BigQuery schema with zero errors, 305 tests pass, extraction
 accuracy is 100% on the authored corpus and 90.2% on the provided chart, and
 re-ingesting is idempotent under both a verbatim re-run and a re-export under
-different file names. **Nothing has been deployed to Google Cloud.** The deploy
-scripts are written and idempotent but unexecuted, so every claim about Cloud
-Run, Eventarc, live BigQuery and the agent's actual answers is unverified.
+different file names.
+
+**It is now deployed and verified on Google Cloud.** All eight charts were
+ingested through the Eventarc path into live BigQuery, and the warehouse
+reproduces the measured answers in `eval/questions.md` exactly — the body-region
+distribution, the five anti-inflammatory-plus-imaging encounters, and Trey
+Barlow's meloxicam prescription all match row for row. Re-uploading all eight
+charts afterwards produced exactly eight ingest runs and changed no row count in
+any table, which is idempotency demonstrated against the service rather than
+asserted.
+
+One blemish remains, and it is cosmetic rather than structural: `exam_findings`
+holds 585 rows against 551 distinct `finding_id`. Those 34 duplicates are
+byte-identical rows left over from a redelivery storm that happened before the
+ack deadline was fixed (see the deploy script). `MERGE` converges but never
+deletes, so they need a one-time cleanup; nothing in the pipeline will produce
+more of them.
 
 ---
 
@@ -28,9 +42,9 @@ Run, Eventarc, live BigQuery and the agent's actual answers is unverified.
 
 | Deliverable | State |
 | --- | --- |
-| §6.1 Eight chart PDFs | Done. `charts/source/` (provided) + `charts/generated/` (7 authored, rendered from `corpus/specs/`). Committed. Not yet uploaded to a bucket. |
-| §6.2 Ingestion pipeline | Code complete. FastAPI, two trigger paths, idempotent MERGE. Not deployed. |
-| §6.3 Structured dataset | Schema complete and documented (`sql/ddl/`, `docs/schema.md`). Not applied to a live dataset. |
+| §6.1 Eight chart PDFs | Done. `charts/source/` (provided) + `charts/generated/` (7 authored, rendered from `corpus/specs/`). Committed and uploaded to `gs://<project>-charts-raw/incoming/`. |
+| §6.2 Ingestion pipeline | Done and deployed. Cloud Run service `chart-ingest`, Eventarc trigger `chart-ingest-finalized`, idempotent MERGE verified live. |
+| §6.3 Structured dataset | Done. 14 tables + 2 views applied to the live `cumberland` dataset and populated from all eight charts. |
 | §6.4 Query agent | Code complete (`agent/`). Four tools, guarded SQL. Never run against a live warehouse. |
 | §6.5 Repository | README, architecture diagram, schema doc, decision log, clean commit history. |
 | §6.6 Demo video | **Not started.** |
@@ -39,9 +53,11 @@ Run, Eventarc, live BigQuery and the agent's actual answers is unverified.
 
 ## What to do first
 
-1. **Deploy.** Follow [DEPLOYMENT.md](DEPLOYMENT.md) end to end. Budget an hour;
-   most of it is Cloud Build. The step that usually fights back is the Eventarc
-   trigger's Pub/Sub permission, and it is documented.
+1. **Clean up the 34 duplicate `exam_findings` rows** left by the pre-fix
+   redelivery storm, so the table reads 551/551. A `SELECT DISTINCT` into the
+   table inside a transaction is enough; the rows are byte-identical.
+   Redeploying is already done — [DEPLOYMENT.md](DEPLOYMENT.md) has been run end
+   to end and the four defects it exposed are fixed in the scripts.
 2. **Run the live test.** `RUN_LIVE_TESTS=1 pytest tests/test_warehouse_live.py`.
    This is the only thing that can prove idempotency against BigQuery itself —
    load-job visibility to `MERGE` is a property of the service, not of this code.
@@ -79,7 +95,7 @@ corpus/             chart authoring: specs -> exam template -> Jinja/WeasyPrint
 sql/ddl/            the warehouse definition; the single source of truth
 eval/               measured accuracy + the four brief questions
 scripts/            infra, DDL, deploys, and a local end-to-end run
-tests/              303 tests
+tests/              305 tests
 ```
 
 **Start reading at** `ingestion/extract/pipeline.py`. It is the spine and it
@@ -126,7 +142,8 @@ non-deterministic crept into the renderer.
 
 ## Known gaps, in the order I would fix them
 
-1. **Nothing is deployed.** Everything about the cloud path is unverified.
+1. **34 duplicate `exam_findings` rows** remain from the pre-fix redelivery
+   storm. Cosmetic and non-recurring, but the table should read 551/551.
 2. **No agent transcript exists.** The answers in `eval/questions.md` are
    computed from the warehouse, not recorded from a model turn.
 3. **`write_document` is not atomic.** Each table merges in its own statement, so
