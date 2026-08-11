@@ -89,3 +89,55 @@ def test_no_staging_tables_are_left_behind(live):
     leftover = [t.table_id for t in client.list_tables(cfg.dataset_ref)
                 if t.table_id.startswith("_stg_")]
     assert leftover == []
+
+
+# --- the views have to be queryable, not merely creatable --------------------
+
+def test_every_documented_view_survives_select_star(live):
+    """`CREATE VIEW` validates a view's SQL but never runs it.
+
+    v_patient_timeline was created, described and committed while being
+    unreadable: its nested arrays were correlated subqueries over other tables,
+    and BigQuery refuses those when it cannot de-correlate them. Every attempt
+    to select one -- including a bare `SELECT *` -- came back 400. Nothing
+    caught it until the deployed agent asked for a patient's history and got an
+    HTTP 500, because no test had ever read from a view.
+    """
+    from agent.tools import ALLOWED_VIEWS
+
+    cfg, client = live
+    for view in ALLOWED_VIEWS:
+        rows = list(client.query(f"SELECT * FROM `{cfg.table(view)}` LIMIT 5").result())
+        assert rows, f"{view} returned no rows"
+
+
+def test_the_timeline_view_unnests_its_arrays(live):
+    """SELECT * can pass while UNNEST still fails -- UNNEST is what every
+    question about prescriptions or history actually compiles down to."""
+    cfg, client = live
+    timeline = cfg.table("v_patient_timeline")
+
+    hypertensive = next(iter(client.query(
+        f"SELECT COUNT(DISTINCT t.mrn) AS n FROM `{timeline}` t, "
+        "UNNEST(t.patient_history) h WHERE LOWER(h.item_text) LIKE '%hypertens%'"
+    ).result()))["n"]
+    assert hypertensive == 3, "left-rail history is patient-level; expected 3"
+
+    written = [row["drug_name"] for row in client.query(
+        f"SELECT rx.drug_name FROM `{timeline}` t, UNNEST(t.prescriptions_written) rx "
+        "WHERE t.mrn = '4820917' AND t.encounter_date = '2025-07-23'"
+    ).result()]
+    assert written == ["meloxicam"]
+
+
+def test_an_encounter_with_no_rows_in_a_child_table_gets_an_empty_array(live):
+    """The correlated form returned [] for a childless encounter; a LEFT JOIN
+    returns NULL. Callers distinguish the two, so the view coalesces."""
+    cfg, client = live
+    row = next(iter(client.query(
+        f"SELECT COUNTIF(procedures IS NULL) AS null_count, "
+        f"COUNTIF(ARRAY_LENGTH(procedures) = 0) AS empty_count "
+        f"FROM `{cfg.table('v_patient_timeline')}`"
+    ).result()))
+    assert row["null_count"] == 0
+    assert row["empty_count"] > 0, "expected some encounters with no procedures"

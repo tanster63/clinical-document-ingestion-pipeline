@@ -113,6 +113,98 @@ LEFT JOIN primary_diagnosis d USING (encounter_id);
 CREATE OR REPLACE VIEW `${PROJECT}.${DATASET}.v_patient_timeline`
 OPTIONS(description="One row per encounter, oldest first, with everything recorded at that visit attached as nested arrays. Two medication arrays are deliberately kept apart: medications_on_arrival is what the patient was ALREADY taking as of encounter_date, prescriptions_written is what was prescribed AT that visit. patient_history is patient-level and repeats on every row for that patient.")
 AS
+-- Every nested array is built here, grouped, and joined on -- NOT written as a
+-- correlated ARRAY(SELECT ... WHERE x.encounter_id = e.encounter_id) subquery.
+--
+-- That is not a style preference. BigQuery rejects a correlated subquery that
+-- references another table unless it can de-correlate it, and it could not
+-- de-correlate these: every query that selected one of these columns failed
+-- with "Correlated subqueries that reference other tables are not supported",
+-- including plain `SELECT * FROM v_patient_timeline`. The view parsed, created
+-- and described cleanly, so nothing caught it until the agent tried to read a
+-- patient's history and got a 400 back. Aggregate first, join second.
+WITH history AS (
+  SELECT
+    patient_id,
+    ARRAY_AGG(STRUCT(history_type, item_text)
+              ORDER BY history_type, item_text) AS patient_history
+  FROM `${PROJECT}.${DATASET}.patient_history`
+  GROUP BY patient_id
+),
+encounter_counts AS (
+  SELECT patient_id, COUNT(*) AS encounter_count
+  FROM `${PROJECT}.${DATASET}.encounters`
+  GROUP BY patient_id
+),
+dx AS (
+  SELECT
+    encounter_id,
+    ARRAY_AGG(STRUCT(icd10_code, icd10_description, diagnosis_text,
+                     is_primary, body_region, laterality)) AS diagnoses
+  FROM `${PROJECT}.${DATASET}.diagnoses`
+  GROUP BY encounter_id
+),
+rx AS (
+  SELECT
+    rx.encounter_id,
+    ARRAY_AGG(STRUCT(rx.drug_name, rx.strength, rx.strength_unit, rx.dose_form,
+                     rx.route, rx.sig_text, rx.quantity, rx.quantity_unit,
+                     rx.refills, rx.duration_days, rx.is_prn, rx.action,
+                     rx.drug_class,
+                     COALESCE(rdc.is_anti_inflammatory, FALSE) AS is_anti_inflammatory
+              )) AS prescriptions_written
+  FROM `${PROJECT}.${DATASET}.prescriptions` rx
+  LEFT JOIN `${PROJECT}.${DATASET}.ref_drug_class` rdc
+    ON LOWER(rdc.drug_name) = LOWER(rx.drug_name)
+  GROUP BY rx.encounter_id
+),
+meds AS (
+  SELECT
+    ms.encounter_id,
+    ARRAY_AGG(STRUCT(ms.medication_name, ms.strength, ms.strength_unit,
+                     ms.dose_form, ms.route,
+                     COALESCE(rdc.is_anti_inflammatory, FALSE) AS is_anti_inflammatory
+              )) AS medications_on_arrival
+  FROM `${PROJECT}.${DATASET}.medication_snapshots` ms
+  LEFT JOIN `${PROJECT}.${DATASET}.ref_drug_class` rdc
+    ON LOWER(rdc.drug_name) = LOWER(ms.medication_name)
+  GROUP BY ms.encounter_id
+),
+img AS (
+  SELECT
+    encounter_id,
+    ARRAY_AGG(STRUCT(modality, body_part, laterality, performed_date,
+                     interpretation_text, impression)) AS imaging
+  FROM `${PROJECT}.${DATASET}.imaging_studies`
+  GROUP BY encounter_id
+),
+proc AS (
+  SELECT
+    encounter_id,
+    ARRAY_AGG(STRUCT(procedure_name, body_part, laterality, performed_date,
+                     surgeon_name, note_text)) AS procedures
+  FROM `${PROJECT}.${DATASET}.procedures`
+  GROUP BY encounter_id
+),
+exam AS (
+  SELECT
+    encounter_id,
+    ARRAY_AGG(STRUCT(body_part, laterality, finding_type, measure_name,
+                     value_numeric, unit, value_text)
+              ORDER BY finding_type, laterality, measure_name) AS exam_findings
+  FROM `${PROJECT}.${DATASET}.exam_findings`
+  GROUP BY encounter_id
+),
+vit AS (
+  -- One row per encounter at most, so this is a plain join rather than an
+  -- aggregate; it stays a STRUCT because a visit has one set of vitals.
+  SELECT
+    encounter_id,
+    STRUCT(taken_by, taken_date, bp_systolic, bp_diastolic, pulse,
+           respirations, o2_sat, temperature_f, height_in,
+           weight_lbs, bmi, bsa, is_patient_reported) AS vitals
+  FROM `${PROJECT}.${DATASET}.vitals`
+)
 SELECT
   e.patient_id,
   p.mrn,
@@ -125,8 +217,7 @@ SELECT
   p.phone_home,
   p.first_seen_date,
   p.last_seen_date,
-  (SELECT COUNT(*) FROM `${PROJECT}.${DATASET}.encounters` pe
-     WHERE pe.patient_id = e.patient_id) AS encounter_count,
+  ec.encounter_count,
   e.encounter_id,
   e.encounter_date,
   e.encounter_seq,
@@ -146,63 +237,30 @@ SELECT
   e.signed_by,
   e.signed_at,
 
-  -- Longitudinal context from the chart's left rail. True of the patient, not
-  -- of the visit, so it repeats on every one of that patient's rows.
-  ARRAY(SELECT AS STRUCT h.history_type, h.item_text
-        FROM `${PROJECT}.${DATASET}.patient_history` h
-        WHERE h.patient_id = e.patient_id
-        ORDER BY h.history_type, h.item_text) AS patient_history,
-
-  ARRAY(SELECT AS STRUCT d.icd10_code, d.icd10_description, d.diagnosis_text,
-                         d.is_primary, d.body_region, d.laterality
-        FROM `${PROJECT}.${DATASET}.diagnoses` d
-        WHERE d.encounter_id = e.encounter_id) AS diagnoses,
-
-  -- Prescribed AT this visit.
-  ARRAY(SELECT AS STRUCT rx.drug_name, rx.strength, rx.strength_unit, rx.dose_form,
-                         rx.route, rx.sig_text, rx.quantity, rx.quantity_unit,
-                         rx.refills, rx.duration_days, rx.is_prn, rx.action,
-                         rx.drug_class,
-                         COALESCE(rdc.is_anti_inflammatory, FALSE) AS is_anti_inflammatory
-        FROM `${PROJECT}.${DATASET}.prescriptions` rx
-        LEFT JOIN `${PROJECT}.${DATASET}.ref_drug_class` rdc
-          ON LOWER(rdc.drug_name) = LOWER(rx.drug_name)
-        WHERE rx.encounter_id = e.encounter_id) AS prescriptions_written,
-
-  -- Already being taken when the patient arrived, and only true as of
-  -- encounter_date. A different fact from the array above.
-  ARRAY(SELECT AS STRUCT ms.medication_name, ms.strength, ms.strength_unit,
-                         ms.dose_form, ms.route,
-                         COALESCE(rdc.is_anti_inflammatory, FALSE) AS is_anti_inflammatory
-        FROM `${PROJECT}.${DATASET}.medication_snapshots` ms
-        LEFT JOIN `${PROJECT}.${DATASET}.ref_drug_class` rdc
-          ON LOWER(rdc.drug_name) = LOWER(ms.medication_name)
-        WHERE ms.encounter_id = e.encounter_id) AS medications_on_arrival,
-
-  ARRAY(SELECT AS STRUCT im.modality, im.body_part, im.laterality,
-                         im.performed_date, im.interpretation_text, im.impression
-        FROM `${PROJECT}.${DATASET}.imaging_studies` im
-        WHERE im.encounter_id = e.encounter_id) AS imaging,
-
-  ARRAY(SELECT AS STRUCT pr.procedure_name, pr.body_part, pr.laterality,
-                         pr.performed_date, pr.surgeon_name, pr.note_text
-        FROM `${PROJECT}.${DATASET}.procedures` pr
-        WHERE pr.encounter_id = e.encounter_id) AS procedures,
-
-  ARRAY(SELECT AS STRUCT f.body_part, f.laterality, f.finding_type, f.measure_name,
-                         f.value_numeric, f.unit, f.value_text
-        FROM `${PROJECT}.${DATASET}.exam_findings` f
-        WHERE f.encounter_id = e.encounter_id
-        ORDER BY f.finding_type, f.laterality, f.measure_name) AS exam_findings,
-
-  (SELECT AS STRUCT v.taken_by, v.taken_date, v.bp_systolic, v.bp_diastolic, v.pulse,
-                    v.respirations, v.o2_sat, v.temperature_f, v.height_in,
-                    v.weight_lbs, v.bmi, v.bsa, v.is_patient_reported
-   FROM `${PROJECT}.${DATASET}.vitals` v
-   WHERE v.encounter_id = e.encounter_id) AS vitals,
+  -- IFNULL, not the raw join result: a correlated ARRAY() subquery returns an
+  -- empty array when nothing matches, a LEFT JOIN returns NULL. UNNEST(NULL)
+  -- yields no rows either way, but IS NULL vs ARRAY_LENGTH = 0 does not, and
+  -- callers were written against the empty-array behaviour.
+  IFNULL(h.patient_history, []) AS patient_history,
+  IFNULL(dx.diagnoses, []) AS diagnoses,
+  IFNULL(rx.prescriptions_written, []) AS prescriptions_written,
+  IFNULL(meds.medications_on_arrival, []) AS medications_on_arrival,
+  IFNULL(img.imaging, []) AS imaging,
+  IFNULL(proc.procedures, []) AS procedures,
+  IFNULL(exam.exam_findings, []) AS exam_findings,
+  vit.vitals,
 
   e.source_document_id,
   e.source_page_start,
   e.source_page_end
 FROM `${PROJECT}.${DATASET}.encounters` e
-JOIN `${PROJECT}.${DATASET}.patients` p USING (patient_id);
+JOIN `${PROJECT}.${DATASET}.patients` p USING (patient_id)
+LEFT JOIN history h ON h.patient_id = e.patient_id
+LEFT JOIN encounter_counts ec ON ec.patient_id = e.patient_id
+LEFT JOIN dx ON dx.encounter_id = e.encounter_id
+LEFT JOIN rx ON rx.encounter_id = e.encounter_id
+LEFT JOIN meds ON meds.encounter_id = e.encounter_id
+LEFT JOIN img ON img.encounter_id = e.encounter_id
+LEFT JOIN proc ON proc.encounter_id = e.encounter_id
+LEFT JOIN exam ON exam.encounter_id = e.encounter_id
+LEFT JOIN vit ON vit.encounter_id = e.encounter_id;
