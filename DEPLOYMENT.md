@@ -190,14 +190,42 @@ SELECT
   (SELECT COUNT(*) FROM \`$GCP_PROJECT_ID.$BQ_DATASET.diagnoses\`)            AS diagnoses,
   (SELECT COUNT(*) FROM \`$GCP_PROJECT_ID.$BQ_DATASET.prescriptions\`)        AS prescriptions,
   (SELECT COUNT(*) FROM \`$GCP_PROJECT_ID.$BQ_DATASET.patient_history\`)      AS history,
-  (SELECT COUNT(*) FROM \`$GCP_PROJECT_ID.$BQ_DATASET.ingestion_issues\`
-     WHERE severity='error')                                                  AS errors"
+  (SELECT COUNT(*) FROM \`$GCP_PROJECT_ID.$BQ_DATASET.patient_history\`)      AS history"
 ```
 
 After all eight charts, expect exactly what `scripts/run_local.py` prints
 locally: **8 patients, 15 encounters, 23 diagnoses, 15 prescriptions, 28 history
-rows, 0 errors.** A difference between the local run and BigQuery is a real
-finding — the two use the same `rows_for()` and `MERGE_KEYS`.
+rows.** A difference between the local run and BigQuery is a real finding — the
+two use the same `rows_for()` and `MERGE_KEYS`.
+
+**Do not read health off `ingestion_issues`.** It is an append-only audit trail
+and is deliberately excluded from the orphan sweep: a later successful run must
+not be able to erase the record that an earlier attempt failed. So a transient
+Vertex `429` leaves an `llm_failed` row behind permanently, even after the
+retry that filled the column in. Ask `ingest_runs` whether the *latest* attempt
+on each document succeeded:
+
+```bash
+bq query --use_legacy_sql=false "
+WITH latest AS (
+  SELECT gcs_uri, status,
+         ROW_NUMBER() OVER (PARTITION BY gcs_uri ORDER BY started_at DESC) rn
+  FROM \`$GCP_PROJECT_ID.$BQ_DATASET.ingest_runs\`
+)
+SELECT COUNTIF(status='succeeded') AS ok, COUNTIF(status!='succeeded') AS bad
+FROM latest WHERE rn = 1"
+```
+
+Expect **8 ok, 0 bad**. To confirm the model-derived columns actually landed,
+check that no encounter is missing them rather than that no error was ever
+logged:
+
+```bash
+bq query --use_legacy_sql=false "
+SELECT COUNTIF(hpi_summary IS NULL) AS missing_summary,
+       COUNTIF(body_region  IS NULL) AS missing_region
+FROM \`$GCP_PROJECT_ID.$BQ_DATASET.encounters\`"
+```
 
 **Prove idempotency** — the point of the whole key design:
 
