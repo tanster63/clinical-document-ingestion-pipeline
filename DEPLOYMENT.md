@@ -22,7 +22,7 @@ Cloud Build runs.
 ```bash
 gcloud --version          # Google Cloud CLI, authenticated
 bq version                # ships with the CLI
-python3.11 --version      # 3.11 specifically; PyMuPDF wheels and ADK both want it
+python3 --version         # 3.11 or newer; 3.13 is what the buildpack uses
 pip install google-adk    # provides the `adk` command used in step 5
 ```
 
@@ -136,9 +136,10 @@ Builds from source with buildpacks (no Dockerfile), deploys to Cloud Run as
    `roles/pubsub.publisher` once per project. The script grants it before
    creating the trigger; if the grant has not propagated yet, wait a minute and
    re-run the script.
-2. *The build fails on PyMuPDF.* The buildpack picked a Python version without a
-   wheel. `.python-version` pins 3.11 for exactly this reason — confirm it was
-   not excluded by `.gcloudignore`.
+2. *The build fails resolving Python.* Google's buildpack builder dropped 3.11,
+   which is what this originally pinned. `.python-version` now says 3.13;
+   PyMuPDF ships stable-ABI (`cp39-abi3`) wheels, so it does not care which of
+   those it gets. Confirm the file was not excluded by `.gcloudignore`.
 
 Smoke test:
 
