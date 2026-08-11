@@ -77,3 +77,55 @@ def test_the_instruction_marks_which_columns_a_model_produced(agent_module):
 
 def test_the_instruction_declines_clinical_advice(agent_module):
     assert "medical advice" in agent_module.INSTRUCTION.lower()
+
+
+# --- the deployed package has a different name than the source directory ------
+#
+# `adk deploy cloud_run --app_name clinical_query_agent` copies ./agent to
+# /app/agents/clinical_query_agent/. Any `from agent.x import ...` inside the
+# package therefore resolves locally and fails in Cloud Run with
+# ModuleNotFoundError: No module named 'agent' -- at request time, not at
+# deploy time, so the service goes green and every question returns a 500.
+# That cost a full build cycle to find once. These tests find it in a second.
+
+AGENT_MODULES = ("__init__.py", "agent.py", "tools.py")
+
+
+def test_the_package_never_imports_itself_by_its_source_directory_name():
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parent.parent / "agent"
+    for name in AGENT_MODULES:
+        text = (root / name).read_text()
+        for line in text.splitlines():
+            stripped = line.strip()
+            assert not stripped.startswith("from agent."), (
+                f"{name}: {stripped!r} resolves here and breaks once ADK renames "
+                "the package; use a relative import"
+            )
+            assert not stripped.startswith("import agent"), f"{name}: {stripped!r}"
+
+
+def test_the_package_imports_under_the_name_adk_deploys_it_as(tmp_path, monkeypatch):
+    """Copy the package to a different name and import it, as Cloud Run does."""
+    import pathlib
+    import shutil
+    import sys
+
+    repo = pathlib.Path(__file__).resolve().parent.parent
+    target = tmp_path / "clinical_query_agent"
+    shutil.copytree(repo / "agent", target,
+                    ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+    # deploy_agent.sh ships ingestion/config.py as the package's own _config
+    shutil.copy(repo / "ingestion" / "config.py", target / "_config.py")
+
+    monkeypatch.syspath_prepend(str(tmp_path))
+    for module in [m for m in sys.modules if m.startswith("clinical_query_agent")]:
+        del sys.modules[module]
+    monkeypatch.delitem(sys.modules, "ingestion.config", raising=False)
+
+    import importlib
+    package = importlib.import_module("clinical_query_agent")
+    assert package.root_agent.name == "clinical_query_agent"
+    assert {tool.__name__ for tool in package.root_agent.tools} == {
+        "get_schema", "find_patient", "patient_timeline", "run_sql",
+    }

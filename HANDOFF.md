@@ -15,7 +15,7 @@ brief disagree, the brief wins.
 ## State in one paragraph
 
 The pipeline is complete and verified locally: eight chart PDFs extract into a
-fourteen-table BigQuery schema with zero errors, 305 tests pass, extraction
+fourteen-table BigQuery schema with zero errors, 307 tests pass, extraction
 accuracy is 100% on the authored corpus and 90.2% on the provided chart, and
 re-ingesting is idempotent under both a verbatim re-run and a re-export under
 different file names.
@@ -95,7 +95,7 @@ corpus/             chart authoring: specs -> exam template -> Jinja/WeasyPrint
 sql/ddl/            the warehouse definition; the single source of truth
 eval/               measured accuracy + the four brief questions
 scripts/            infra, DDL, deploys, and a local end-to-end run
-tests/              305 tests
+tests/              307 tests
 ```
 
 **Start reading at** `ingestion/extract/pipeline.py`. It is the spine and it

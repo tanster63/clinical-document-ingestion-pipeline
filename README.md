@@ -61,7 +61,7 @@ in [`eval/report.md`](eval/report.md) and in [decision 14](docs/decisions.md).
 python3.11 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt -r requirements-dev.txt
 
-pytest                       # 305 tests, including the provided chart end to end
+pytest                       # 307 tests, including the provided chart end to end
 python scripts/run_local.py  # every chart through the real pipeline, no GCP
 python -m eval.accuracy      # regenerates eval/report.md
 ```
@@ -197,7 +197,7 @@ no imaging section.
 ## Testing
 
 ```bash
-pytest                                   # 305 tests, no credentials needed
+pytest                                   # 307 tests, no credentials needed
 pytest -m golden -v                      # just the provided chart, end to end
 python -m eval.accuracy                  # regenerates eval/report.md
 RUN_LIVE_TESTS=1 pytest tests/test_warehouse_live.py   # needs GCP + a sourced .env

@@ -7,12 +7,12 @@ matters most here, because a reader cannot tell it apart from a real one.
 
 from google.adk.agents import LlmAgent
 
-from agent.tools import find_patient, get_schema, patient_timeline, run_sql
+from .tools import find_patient, get_schema, patient_timeline, run_sql
 
 try:
     from ingestion.config import load_config
 except ModuleNotFoundError:  # pragma: no cover - deployed agent carries its own copy
-    from agent._config import load_config
+    from ._config import load_config
 
 _cfg = load_config()
 

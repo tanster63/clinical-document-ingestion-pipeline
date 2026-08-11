@@ -16,7 +16,7 @@ from google.cloud import bigquery
 try:
     from ingestion.config import load_config
 except ModuleNotFoundError:  # pragma: no cover - deployed agent carries its own copy
-    from agent._config import load_config
+    from ._config import load_config
 
 MAX_ROWS = 200
 MAX_SCAN_BYTES = 200 * 1024 * 1024  # 200 MB

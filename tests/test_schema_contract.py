@@ -8,6 +8,7 @@ single definition of the warehouse.
 """
 
 import re
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -115,18 +116,40 @@ def test_the_agent_only_reads_views_that_exist():
 SHIPPED = ("ingestion", "agent", "corpus", "sql", "scripts")
 
 
+def _tracked_files() -> list[Path]:
+    """Only what git would actually publish.
+
+    Walking the working tree instead picks up build artefacts -- notably
+    `agent/_config.py`, the gitignored copy of `ingestion/config.py` that
+    deploy_agent.sh makes -- and reports the exempt file under a name the
+    exemption does not cover. Nothing untracked reaches GitHub, so nothing
+    untracked is in scope for a test about what is committed.
+    """
+    listed = subprocess.run(
+        ["git", "ls-files", "-z"], cwd=REPO_ROOT,
+        capture_output=True, text=True, check=True,
+    ).stdout
+    return [REPO_ROOT / name for name in listed.split("\0") if name]
+
+
 def test_no_deployment_literal_is_committed_in_shipped_source():
     """Project ID, dataset, bucket, region and model name live in .env and are
     read through config.py. Anywhere else is a value that will go stale."""
     from ingestion.config import DEFAULT_GEMINI_MODEL, DEFAULT_LOCATION
 
-    offenders = []
-    for directory in SHIPPED:
-        for path in sorted((REPO_ROOT / directory).rglob("*")):
-            if path.suffix not in {".py", ".sql", ".sh"} or path.name == "config.py":
-                continue
-            text = path.read_text()
-            for literal in (DEFAULT_GEMINI_MODEL, DEFAULT_LOCATION):
-                if literal in text:
-                    offenders.append(f"{path.relative_to(REPO_ROOT)} names {literal!r}")
+    scanned, offenders = 0, []
+    for path in _tracked_files():
+        relative = path.relative_to(REPO_ROOT)
+        if relative.parts[0] not in SHIPPED:
+            continue
+        if path.suffix not in {".py", ".sql", ".sh"} or path.name == "config.py":
+            continue
+        scanned += 1
+        text = path.read_text()
+        for literal in (DEFAULT_GEMINI_MODEL, DEFAULT_LOCATION):
+            if literal in text:
+                offenders.append(f"{relative} names {literal!r}")
+
+    # A filter bug here fails open: the test goes green because it read nothing.
+    assert scanned > 20, f"only scanned {scanned} files — the filter is wrong"
     assert offenders == [], offenders
