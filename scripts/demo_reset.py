@@ -9,9 +9,10 @@ rows first so the ingest that follows has something to write.
 
 Nothing here fabricates data. It deletes rows the pipeline will reproduce
 byte-for-byte from the same PDF, which is the idempotency claim stated as a
-procedure rather than as a sentence. `--verify` is what proves it: it compares
-the warehouse against the snapshot taken before the delete and reports any
-column that came back different.
+procedure rather than as a sentence. `--verify` is what proves it: it hashes
+every row on both sides and reports any column that came back different. Load
+stamps are excluded -- `ingested_at` records when a row arrived, not what it
+says, and a re-ingest is supposed to change it.
 
     python scripts/demo_reset.py --clear            # before recording
     ... upload the chart, let Eventarc ingest it ...
@@ -52,6 +53,11 @@ CLINICAL_TABLES = [
 
 SNAPSHOT = pathlib.Path(__file__).resolve().parent.parent / "build" / "demo_reset_state.json"
 
+# Columns that record *when* a row was loaded rather than what it says. A
+# re-ingest is supposed to change them. Comparing them would fail every
+# restore and would be comparing the clock, not the chart.
+VOLATILE_COLUMNS = {"patients": ["ingested_at"], "documents": ["ingested_at"]}
+
 
 def _resolve_document(client: bigquery.Client, cfg, needle: str) -> tuple[str, str]:
     """Find the one document whose filename or id contains `needle`."""
@@ -83,18 +89,28 @@ def _counts(client: bigquery.Client, cfg, document_id: str) -> dict[str, int]:
     return {row["t"]: row["n"] for row in rows}
 
 
-def _fingerprint(client: bigquery.Client, cfg, document_id: str) -> dict[str, str]:
+def _fingerprint(client: bigquery.Client, cfg, document_id: str,
+                 backup: bool = False) -> dict[str, str]:
     """A hash of every row of this document, per table.
 
     Counts alone would let a re-ingest that changed a value pass as a restore.
     Hashing the sorted row JSON catches a changed column, and ordering by the
     hash rather than by a key makes the fingerprint independent of row order.
+
+    `backup=True` reads the `_demo_bak_*` tables instead of the live ones, so
+    verification compares the warehouse against the rows that were actually
+    taken out of it, using one query shape for both sides. The alternative --
+    trusting a hash computed at clear time -- would silently pass if this
+    function's logic ever changed between the two runs.
     """
     out = {}
     for table in CLINICAL_TABLES:
+        drop = VOLATILE_COLUMNS.get(table)
+        row_expr = f"(SELECT AS STRUCT t.* EXCEPT ({', '.join(drop)}))" if drop else "t"
+        source = _backup_name(cfg, table) if backup else cfg.table(table)
         row = list(client.query(
             f"SELECT TO_HEX(MD5(STRING_AGG(h, '' ORDER BY h))) AS fp FROM ("
-            f"  SELECT TO_HEX(MD5(TO_JSON_STRING(t))) AS h FROM `{cfg.table(table)}` t"
+            f"  SELECT TO_HEX(MD5(TO_JSON_STRING({row_expr}))) AS h FROM `{source}` t"
             f"  WHERE source_document_id = @doc)",
             job_config=bigquery.QueryJobConfig(query_parameters=[
                 bigquery.ScalarQueryParameter("doc", "STRING", document_id)]),
@@ -180,13 +196,14 @@ def verify(client: bigquery.Client, cfg) -> None:
 
     if ok:
         print("\nrow counts match. checking every column, not just the counts:")
+        expected_fp = _fingerprint(client, cfg, document_id, backup=True)
         current = _fingerprint(client, cfg, document_id)
         for table in CLINICAL_TABLES:
-            if current[table] != state["fingerprint"][table]:
+            if current[table] != expected_fp[table]:
                 ok = False
                 print(f"  BAD {table:22} rows returned with different values")
         if ok:
-            print("  ok  every row is byte-identical to what was cleared")
+            print("  ok  every row identical to what was cleared, load stamps aside")
 
     if not ok:
         print("\nthe re-ingest did not reproduce the chart. The backup tables are\n"
