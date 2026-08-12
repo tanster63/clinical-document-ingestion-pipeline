@@ -48,7 +48,7 @@ pipeline can create more of them; the ack deadline is the actual fix.
 | §6.3 Structured dataset | Done. 14 tables + 2 views applied to the live `cumberland` dataset and populated from all eight charts. |
 | §6.4 Query agent | Done and deployed. Cloud Run service `chart-agent`, four tools, guarded SQL, driven through all nine `eval/questions.md` prompts against the live warehouse — all nine answer correctly and in full. |
 | §6.5 Repository | README, architecture diagram, schema doc, decision log, clean commit history. |
-| §6.6 Demo video | **Not started.** |
+| §6.6 Demo video | **Not recorded.** The runbook is written — see [docs/demo_brief.md](docs/demo_brief.md) — and the reset that makes a live ingest filmable has been proven end to end against the deployed services. |
 
 ---
 
@@ -206,6 +206,11 @@ pipeline is built not to have.
 The brief asks for three things: a PDF entering the bucket and rows appearing in
 BigQuery, the agent answering at least three questions including one spanning
 multiple tables, and a brief explanation of the schema.
+
+**[docs/demo_brief.md](docs/demo_brief.md) is the operational version of this** —
+the same cut with the actual commands, the pre-flight checks, the expected row
+counts either side of the ingest, and the failure modes that ruin a take. The
+table below is the shape; that file is how you run it.
 
 Suggested cut:
 
