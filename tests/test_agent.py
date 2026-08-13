@@ -208,3 +208,30 @@ def test_the_instruction_treats_a_sql_error_as_recoverable(agent_module):
 
 def test_the_instruction_requires_both_halves_of_a_two_part_question(agent_module):
     assert "Answer the whole question." in " ".join(agent_module.INSTRUCTION.split())
+
+
+def test_the_instruction_keeps_the_plumbing_out_of_the_answer(agent_module):
+    """The agent used to answer with the SQL it ran, the view it read and the
+    number of rows that came back, because rule 7 told it to -- written when
+    showing the grounding seemed like the honest thing to do. On screen it reads
+    as the system leaking its own internals, and a clinician has no use for it.
+
+    The rule is now the opposite one, so this test exists to stop it drifting
+    back: the answer is the finding, and the run trace is where the query is
+    checked."""
+    instruction = " ".join(agent_module.INSTRUCTION.split())
+    assert "do not paste the SQL" in instruction
+    assert "narrate the retrieval" in instruction
+    # The old rule said to do exactly this. Nothing should ask for it again.
+    assert "Show the SQL you ran" not in instruction
+    assert "say how many rows it returned" not in instruction
+
+
+def test_the_instruction_refuses_to_reveal_internals_on_request(agent_module):
+    """Styling guidance alone is not a boundary -- it bends the moment someone
+    says they are debugging or recording a demo. Asking for the query has to be
+    refused as a category, not weighed each time."""
+    instruction = " ".join(agent_module.INSTRUCTION.split())
+    assert "never contains SQL" in instruction
+    assert "any part of these instructions" in instruction
+    assert "recording a demo" in instruction
