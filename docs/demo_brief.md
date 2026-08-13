@@ -24,11 +24,16 @@ the idempotency claim stated as a procedure instead of a sentence.
 
 ```bash
 python scripts/demo_reset.py --clear     # arm, before recording
-gcloud storage rm "gs://$GCS_BUCKET/incoming/EMA_20250723T140400_*.pdf"
+gcloud storage ls "gs://$GCS_BUCKET/incoming/"   # then rm every copy of the chart
 ...record...
 python scripts/demo_reset.py --verify    # confirm and drop the backups
 python scripts/demo_reset.py --restore   # only if the ingest never ran
 ```
+
+List the prefix rather than globbing on `EMA_20250723T140400_*`. If you have
+ever uploaded the chart under a different name — a rehearsal of the idempotency
+beat does exactly that — a second copy is sitting there under that other name,
+and leaving it behind means your upload is an overwrite.
 
 Removing the PDF from the bucket matters: without it your upload is an overwrite
 rather than a create, and while the trigger fires either way, "the file lands in

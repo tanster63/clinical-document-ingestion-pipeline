@@ -58,6 +58,12 @@ SNAPSHOT = pathlib.Path(__file__).resolve().parent.parent / "build" / "demo_rese
 # restore and would be comparing the clock, not the chart.
 VOLATILE_COLUMNS = {"patients": ["ingested_at"], "documents": ["ingested_at"]}
 
+# The provided chart, addressed by content rather than by name. `document_id` is
+# the sha256 of the PDF's own bytes, so it is the one identifier that survives a
+# re-upload under a different filename -- and MERGE updates `documents.file_name`
+# when that happens, which broke a filename default twice.
+PROVIDED_CHART_ID = "9142b7de8f423e70"
+
 
 def _resolve_document(client: bigquery.Client, cfg, needle: str) -> tuple[str, str]:
     """Find the one document whose filename or id contains `needle`."""
@@ -251,7 +257,7 @@ def main() -> None:
                        help="put the backed-up rows back without re-ingesting")
     parser.add_argument("--dry-run", action="store_true",
                        help="with --clear: report what would go, delete nothing")
-    parser.add_argument("--chart", default="MRN4820917",
+    parser.add_argument("--chart", default=PROVIDED_CHART_ID,
                         help="substring of the filename or document id "
                              "(default: the chart the brief provided)")
     args = parser.parse_args()
