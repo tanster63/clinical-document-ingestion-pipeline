@@ -18,7 +18,14 @@ says, and a re-ingest is supposed to change it.
     ... upload the chart, let Eventarc ingest it ...
     python scripts/demo_reset.py --verify           # after recording
 
+    python scripts/demo_reset.py --rearm            # both, between takes
     python scripts/demo_reset.py --restore          # if the ingest never ran
+
+`--rearm` is the one to use when rehearsing: it verifies the take that just
+finished, clears the chart again, and removes every copy of the PDF from the
+landing prefix so the next upload is a create. The verify runs first and is
+allowed to stop the rest -- if the last ingest did not reproduce the chart,
+clearing again would destroy both the evidence and the backups.
 
 The backup is a set of `_demo_bak_*` tables in the same dataset, so `--restore`
 puts the warehouse back without needing the pipeline at all. `--verify` drops
@@ -33,11 +40,12 @@ to film the pipeline doing it is the one thing this must not do.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import pathlib
 import sys
 
-from google.cloud import bigquery
+from google.cloud import bigquery, storage
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
@@ -129,7 +137,43 @@ def _backup_name(cfg, table: str) -> str:
     return cfg.table(f"_demo_bak_{table}")
 
 
-def clear(client: bigquery.Client, cfg, needle: str, dry_run: bool = False) -> None:
+def purge_from_bucket(cfg, document_id: str, prefix: str = "incoming/") -> int:
+    """Delete every copy of this chart from the landing prefix.
+
+    Matched by hashing each object's bytes rather than by name, because a copy
+    left behind under a different name is exactly the case a name-based sweep
+    misses -- and rehearsing the idempotency beat creates one. `document_id` is
+    the sha256 of the PDF, so this asks the same question the pipeline asks.
+
+    Sizes are compared first: different lengths cannot be the same bytes, so
+    the download only happens for real candidates.
+    """
+    bucket = storage.Client(project=cfg.project_id).bucket(cfg.bucket)
+    blobs = list(bucket.list_blobs(prefix=prefix))
+    sizes = {b.size for b in blobs}
+    target_size = None
+    removed = 0
+    for blob in blobs:
+        if target_size is not None and blob.size != target_size:
+            continue
+        if hashlib.sha256(blob.download_as_bytes()).hexdigest() != document_id:
+            continue
+        target_size = blob.size
+        blob.delete()
+        removed += 1
+        print(f"  removed  gs://{cfg.bucket}/{blob.name}")
+
+    if not removed:
+        print(f"  nothing to remove under gs://{cfg.bucket}/{prefix}")
+    elif len(sizes) == 1 and len(blobs) > 1:
+        # Every object is the same length, so the size filter bought nothing and
+        # each one was downloaded. Worth knowing if this prefix ever gets large.
+        print(f"  ({len(blobs)} objects, all the same size -- all were hashed)")
+    return removed
+
+
+def clear(client: bigquery.Client, cfg, needle: str, dry_run: bool = False,
+          announce_upload: bool = True) -> str:
     document_id, file_name = _resolve_document(client, cfg, needle)
     before = _counts(client, cfg, document_id)
     fingerprint = _fingerprint(client, cfg, document_id)
@@ -148,7 +192,7 @@ def clear(client: bigquery.Client, cfg, needle: str, dry_run: bool = False) -> N
                 print(f"  {table:22} {before[table]:>4} rows"
                       f"   fp {fingerprint.get(table, '')[:12] or '-'}")
         print("\ndry run: nothing was deleted and no backup was written.")
-        return
+        return document_id
 
     param = [bigquery.ScalarQueryParameter("doc", "STRING", document_id)]
     for table in CLINICAL_TABLES + ["documents"]:
@@ -174,8 +218,10 @@ def clear(client: bigquery.Client, cfg, needle: str, dry_run: bool = False) -> N
     after = _counts(client, cfg, document_id)
     assert sum(after.values()) == 0, f"rows survived the delete: {after}"
     print(f"\nwarehouse is clear of this chart. state saved to {SNAPSHOT}")
-    print(f"\nnow upload it and let Eventarc ingest:\n"
-          f'  gcloud storage cp "charts/**/{file_name}" "gs://$GCS_BUCKET/incoming/"')
+    if announce_upload:
+        print(f"\nnow upload it and let Eventarc ingest:\n"
+              f'  gcloud storage cp "charts/**/{file_name}" "gs://$GCS_BUCKET/incoming/"')
+    return document_id
 
 
 def _load_snapshot() -> dict:
@@ -246,6 +292,36 @@ def restore(client: bigquery.Client, cfg) -> None:
     print("\nrestored. backup tables and snapshot left in place.")
 
 
+def rearm(client: bigquery.Client, cfg, needle: str) -> None:
+    """Close out the last take and set up the next one, in one command.
+
+    Between takes the same three things always have to happen: confirm the
+    re-ingest was faithful and drop the backups, clear the chart again, and get
+    every copy of the PDF back out of the landing prefix. Doing them by hand is
+    three commands with a destructive one in the middle, and the failure mode of
+    forgetting the third is silent -- the upload becomes an overwrite.
+
+    Verification comes first and is allowed to stop everything. If the last
+    ingest did not reproduce the chart, that is the finding, and clearing again
+    would destroy the evidence and the backups that could put it right.
+    """
+    if SNAPSHOT.exists():
+        print("== closing out the last take\n")
+        verify(client, cfg)          # exits non-zero if it did not reproduce
+        print()
+    else:
+        print("no snapshot; assuming the warehouse is at baseline\n")
+
+    print("== clearing the chart\n")
+    document_id = clear(client, cfg, needle, announce_upload=False)
+
+    print("\n== removing it from the bucket\n")
+    purge_from_bucket(cfg, document_id)
+
+    print("\narmed. upload it when you are ready:\n"
+          '  gcloud storage cp charts/source/*.pdf "gs://$GCS_BUCKET/incoming/"')
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     group = parser.add_mutually_exclusive_group(required=True)
@@ -255,6 +331,8 @@ def main() -> None:
                        help="check the re-ingest reproduced them, then drop the backup")
     group.add_argument("--restore", action="store_true",
                        help="put the backed-up rows back without re-ingesting")
+    group.add_argument("--rearm", action="store_true",
+                       help="between takes: verify, clear, and empty the bucket")
     parser.add_argument("--dry-run", action="store_true",
                        help="with --clear: report what would go, delete nothing")
     parser.add_argument("--chart", default=PROVIDED_CHART_ID,
@@ -269,6 +347,8 @@ def main() -> None:
         clear(client, cfg, args.chart, dry_run=args.dry_run)
     elif args.verify:
         verify(client, cfg)
+    elif args.rearm:
+        rearm(client, cfg, args.chart)
     else:
         restore(client, cfg)
 

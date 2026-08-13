@@ -23,17 +23,26 @@ deletes rows the pipeline reproduces byte-for-byte from the same PDF, which is
 the idempotency claim stated as a procedure instead of a sentence.
 
 ```bash
-python scripts/demo_reset.py --clear     # arm, before recording
-gcloud storage ls "gs://$GCS_BUCKET/incoming/"   # then rm every copy of the chart
+python scripts/demo_reset.py --rearm     # between takes: verify, clear, empty the bucket
 ...record...
-python scripts/demo_reset.py --verify    # confirm and drop the backups
+python scripts/demo_reset.py --rearm     # again, for the next take
+python scripts/demo_reset.py --verify    # after the LAST take: confirm, drop backups, stop
 python scripts/demo_reset.py --restore   # only if the ingest never ran
 ```
 
-List the prefix rather than globbing on `EMA_20250723T140400_*`. If you have
-ever uploaded the chart under a different name — a rehearsal of the idempotency
-beat does exactly that — a second copy is sitting there under that other name,
-and leaving it behind means your upload is an overwrite.
+`--rearm` is the one to use while rehearsing. It verifies the take that just
+finished, clears the chart again, and removes every copy of the PDF from the
+landing prefix. The verify runs first and is allowed to stop the rest: if the
+last ingest did not reproduce the chart, clearing again would destroy both the
+evidence and the backups that could put it right.
+
+It finds copies in the bucket by hashing their bytes, not by matching the name.
+That matters because rehearsing the idempotency beat with a renamed file leaves
+a second copy behind under that other name, and a leftover copy makes your next
+upload an overwrite instead of a create.
+
+Finish with `--verify`, not `--rearm` — the last thing you do should leave the
+warehouse whole.
 
 Removing the PDF from the bucket matters: without it your upload is an overwrite
 rather than a create, and while the trigger fires either way, "the file lands in
@@ -236,6 +245,12 @@ as a command. Flatten every command to one line before pasting.
 
 **The 90 seconds is not negotiable.** If you fumble the upload beat, stop and
 re-arm rather than talking over a stalled query.
+
+**The tables do not all land at once.** `documents` appears within about half a
+minute; `exam_findings` is last. Run the after-counts too early and you get
+`documents 8` next to `exam_findings 446` — a half-written picture that reads as
+a bug on camera. Check `ingest_runs` for `succeeded` first, which is why the
+audit row is the beat before the counts and not after.
 
 **Do not leave it cleared.** If you record and walk away without `--verify` or
 `--restore`, the warehouse is short a patient and the agent will answer about
