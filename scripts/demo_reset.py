@@ -42,6 +42,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import pathlib
 import sys
 
@@ -59,7 +60,8 @@ CLINICAL_TABLES = [
     "vitals",
 ]
 
-SNAPSHOT = pathlib.Path(__file__).resolve().parent.parent / "build" / "demo_reset_state.json"
+REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
+SNAPSHOT = REPO_ROOT / "build" / "demo_reset_state.json"
 
 # Columns that record *when* a row was loaded rather than what it says. A
 # re-ingest is supposed to change them. Comparing them would fail every
@@ -71,6 +73,31 @@ VOLATILE_COLUMNS = {"patients": ["ingested_at"], "documents": ["ingested_at"]}
 # re-upload under a different filename -- and MERGE updates `documents.file_name`
 # when that happens, which broke a filename default twice.
 PROVIDED_CHART_ID = "9142b7de8f423e70"
+
+
+def _dotenv(path: pathlib.Path) -> dict[str, str]:
+    """Read .env well enough for the three variables this script needs.
+
+    The shell scripts get these with `set -a; source .env`, which a python entry
+    point cannot do to its own process. Rehearsing the demo means opening tabs,
+    and a tab that has not sourced .env failed here with a stack trace out of
+    config.py rather than a sentence -- at the point in a session where the
+    warehouse is half-cleared and the useful thing is to run the command.
+
+    `config.load_config` still owns what is required and what the defaults are;
+    this only supplies the mapping. The process environment is merged over the
+    top of it, so an explicit override on the command line still wins.
+    """
+    if not path.exists():
+        return {}
+    out = {}
+    for line in path.read_text().splitlines():
+        line = line.strip().removeprefix("export ")
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        out[key.strip()] = value.strip().strip('"').strip("'")
+    return out
 
 
 def _resolve_document(client: bigquery.Client, cfg, needle: str) -> tuple[str, str]:
@@ -340,7 +367,7 @@ def main() -> None:
                              "(default: the chart the brief provided)")
     args = parser.parse_args()
 
-    cfg = load_config()
+    cfg = load_config({**_dotenv(REPO_ROOT / ".env"), **os.environ})
     client = bigquery.Client(project=cfg.project_id)
 
     if args.clear:
