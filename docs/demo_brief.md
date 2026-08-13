@@ -23,12 +23,16 @@ deletes rows the pipeline reproduces byte-for-byte from the same PDF, which is
 the idempotency claim stated as a procedure instead of a sentence.
 
 ```bash
-python scripts/demo_reset.py --rearm     # between takes: verify, clear, empty the bucket
+./scripts/demo_rearm.sh                  # between takes: verify, clear, empty the bucket
 ...record...
-python scripts/demo_reset.py --rearm     # again, for the next take
+./scripts/demo_rearm.sh                  # again, for the next take
 python scripts/demo_reset.py --verify    # after the LAST take: confirm, drop backups, stop
 python scripts/demo_reset.py --restore   # only if the ingest never ran
 ```
+
+`demo_rearm.sh` is a wrapper over `demo_reset.py --rearm` that sources `.env`
+and finds the virtualenv, so it works in a tab you just opened. The steps below
+describe the script; the wrapper is only how you type it.
 
 `--rearm` is the one to use while rehearsing. It verifies the take that just
 finished, clears the chart again, and removes every copy of the PDF from the
